@@ -2,10 +2,10 @@
 # 该文件定义了代码审阅者规则
 
 # 规则1：front-end-service 目录下的所有文件，由 @yourname 负责审阅
-/front-end-service/    ZhaoJinHui0108
+/front-end-service/ @ZhaoJinHui0108
 
 # 规则2：如果想指定多人，用空格分隔
-# /front-end-service/    @yourname @teammate1 @teammate2
+# /front-end-service/ @yourname @teammate1 @teammate2
 
 # 规则3：如果还想让某些特定文件由特定的人审阅
-# /front-end-service/package.json    @yourname
+# /front-end-service/package.json @yourname
