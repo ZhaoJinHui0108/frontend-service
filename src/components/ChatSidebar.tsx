@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { chatApi, ChatMessage } from '../api/chat';
+import { chatApi, ChatMessage, ModelInfo } from '../api/chat';
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -15,6 +15,9 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [models, setModels] = useState<ModelInfo[]>([]);
+  const [selectedModel, setSelectedModel] = useState('MiniMax-M2.7');
+  const [currentModel, setCurrentModel] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -25,6 +28,15 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
     scrollToBottom();
   }, [messages]);
 
+  // Fetch available models on mount
+  useEffect(() => {
+    if (isOpen) {
+      chatApi.listModels().then((response) => {
+        setModels(response.models);
+      }).catch(console.error);
+    }
+  }, [isOpen]);
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -33,9 +45,10 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
     setMessages(newMessages);
     setInput('');
     setIsLoading(true);
+    setCurrentModel(selectedModel);
 
     try {
-      const response = await chatApi.sendMessage(newMessages);
+      const response = await chatApi.sendMessage(newMessages, selectedModel);
       const assistantMessage: ChatMessage = {
         role: 'assistant',
         content: response.content,
@@ -65,7 +78,6 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
     <>
       {/* Backdrop */}
       <div
-        className="chat-backdrop"
         onClick={onClose}
         style={{
           position: 'fixed',
@@ -80,12 +92,11 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
 
       {/* Sidebar */}
       <div
-        className="chat-sidebar"
         style={{
           position: 'fixed',
           top: 0,
           right: 0,
-          width: '400px',
+          width: '420px',
           height: '100vh',
           backgroundColor: 'white',
           boxShadow: '-4px 0 20px rgba(0, 0, 0, 0.15)',
@@ -99,28 +110,58 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
           style={{
             padding: '16px',
             borderBottom: '1px solid var(--border-light)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '20px' }}>🤖</span>
-            <span style={{ fontWeight: 600, fontSize: '16px' }}>AI 助手</span>
-          </div>
-          <button
-            onClick={onClose}
+          <div
             style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '24px',
-              cursor: 'pointer',
-              color: 'var(--text-muted)',
-              padding: '4px 8px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px',
             }}
           >
-            ×
-          </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '20px' }}>🤖</span>
+              <span style={{ fontWeight: 600, fontSize: '16px' }}>AI 助手</span>
+            </div>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                color: 'var(--text-muted)',
+                padding: '4px 8px',
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Model Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>模型:</span>
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                border: '1px solid var(--border-default)',
+                borderRadius: '8px',
+                fontSize: '13px',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+              }}
+            >
+              {models.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.id} ({model.provider})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Messages */}
@@ -182,7 +223,9 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
                   animation: 'spin 0.8s linear infinite',
                 }}
               />
-              <span style={{ fontSize: '13px' }}>思考中...</span>
+              <span style={{ fontSize: '13px' }}>
+                {currentModel ? `${currentModel} 思考中...` : '思考中...'}
+              </span>
             </div>
           )}
 
