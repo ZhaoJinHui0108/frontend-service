@@ -7,13 +7,8 @@ interface ChatSidebarProps {
   onClose: () => void;
 }
 
-const INITIAL_MESSAGE: ChatMessage = {
-  role: 'system',
-  content: '你是一个有帮助的AI助手，可以回答关于这个系统的问题。系统信息：这是一个用户管理系统，包含用户管理、角色管理、权限管理、笔记管理等功能。',
-};
-
 export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [apiKeys, setApiKeys] = useState<ApiKeyInfo[]>([]);
@@ -197,7 +192,7 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
               >
                 {apiKeys.map((ak) => (
                   <option key={ak.key} value={ak.key}>
-                    {ak.key} ({ak.provider})
+                    {ak.key}
                   </option>
                 ))}
               </select>
@@ -224,7 +219,7 @@ export default function ChatSidebar({ isOpen, onClose }: ChatSidebarProps) {
             >
               {models.map((model) => (
                 <option key={model.id} value={model.id}>
-                  {model.name} ({model.provider})
+                  {model.name}
                 </option>
               ))}
             </select>

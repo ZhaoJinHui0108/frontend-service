@@ -7,7 +7,7 @@ export interface ChatMessage {
 
 export interface ChatRequest {
   messages: ChatMessage[];
-  api_key_name: string;
+  api_key_name?: string;
   model: string;
   temperature?: number;
   max_tokens?: number;

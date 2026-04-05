@@ -147,7 +147,7 @@ function SensitiveConfigs() {
         )}
       </div>
 
-      <div className={`modal-overlay ${showModal ? '' : 'hidden'}`} onClick={() => setShowModal(false)}>
+      <div className={`modal-overlay ${showModal ? '' : 'hidden'}`}>
         <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h3 className="modal-title">{editConfig ? 'Edit Config' : 'New Config'}</h3>
