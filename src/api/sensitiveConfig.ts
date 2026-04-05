@@ -22,22 +22,22 @@ export interface SensitiveConfigUpdate {
 
 export const sensitiveConfigApi = {
   getConfigs: () => {
-    return axios.get<SensitiveConfig[]>('/sensitive-configs');
+    return axios.get<SensitiveConfig[]>('/sensitive-configs/');
   },
 
   getConfig: (id: number) => {
-    return axios.get<SensitiveConfig>(`/sensitive-configs/${id}`);
+    return axios.get<SensitiveConfig>(`/sensitive-configs/${id}/`);
   },
 
   createConfig: (data: SensitiveConfigCreate) => {
-    return axios.post<SensitiveConfig>('/sensitive-configs', data);
+    return axios.post<SensitiveConfig>('/sensitive-configs/', data);
   },
 
   updateConfig: (id: number, data: SensitiveConfigUpdate) => {
-    return axios.put<SensitiveConfig>(`/sensitive-configs/${id}`, data);
+    return axios.put<SensitiveConfig>(`/sensitive-configs/${id}/`, data);
   },
 
   deleteConfig: (id: number) => {
-    return axios.delete(`/sensitive-configs/${id}`);
+    return axios.delete(`/sensitive-configs/${id}/`);
   },
 };
