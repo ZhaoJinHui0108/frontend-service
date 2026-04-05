@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { roleApi, permissionApi } from '../api';
 import type { Role, RoleCreate, RoleUpdate, Permission } from '../types';
+import { Button, Card, Badge, Modal, Input } from '../components/ui';
 
 function Roles() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -17,7 +18,7 @@ function Roles() {
       const { data } = await roleApi.list();
       setRoles(data);
     } catch (err: any) {
-      setError(err.response?.data?.detail || '获取角色列表失败');
+      setError(err.response?.data?.detail || 'Failed to load roles');
     } finally {
       setLoading(false);
     }
@@ -54,8 +55,8 @@ function Roles() {
     });
   }, [roles]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError('');
     try {
       if (editingRole) {
@@ -71,17 +72,17 @@ function Roles() {
       setFormData({ name: '', description: '' });
       fetchRoles();
     } catch (err: any) {
-      setError(err.response?.data?.detail || '操作失败');
+      setError(err.response?.data?.detail || 'Operation failed');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除这个角色吗？')) return;
+    if (!confirm('Are you sure?')) return;
     try {
       await roleApi.delete(id);
       fetchRoles();
     } catch (err: any) {
-      setError(err.response?.data?.detail || '删除失败');
+      setError(err.response?.data?.detail || 'Delete failed');
     }
   };
 
@@ -90,7 +91,7 @@ function Roles() {
       await roleApi.assignPermission(roleId, permissionId);
       fetchRolePermissions(roleId);
     } catch (err: any) {
-      setError(err.response?.data?.detail || '分配权限失败');
+      setError(err.response?.data?.detail || 'Assign permission failed');
     }
   };
 
@@ -99,7 +100,7 @@ function Roles() {
       await roleApi.removePermission(roleId, permissionId);
       fetchRolePermissions(roleId);
     } catch (err: any) {
-      setError(err.response?.data?.detail || '移除权限失败');
+      setError(err.response?.data?.detail || 'Remove permission failed');
     }
   };
 
@@ -109,63 +110,82 @@ function Roles() {
     setShowModal(true);
   };
 
-  if (loading) {
-    return <div className="loading">加载中...</div>;
-  }
+  const openCreateModal = () => {
+    setEditingRole(null);
+    setFormData({ name: '', description: '' });
+    setShowModal(true);
+  };
 
   const getAvailablePermissions = (roleId: number) => {
     const assignedIds = new Set((rolePermissions[roleId] || []).map(p => p.id));
     return permissions.filter(p => !assignedIds.has(p.id));
   };
 
+  if (loading) {
+    return <div className="loading">Loading...</div>;
+  }
+
   return (
-    <div>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>角色管理</h1>
-        <button className="btn btn-primary" onClick={() => { setEditingRole(null); setFormData({ name: '', description: '' }); setShowModal(true); }}>
-          创建角色
-        </button>
+    <div className="page-content">
+      <div className="page-header flex-between">
+        <h1>Roles</h1>
+        <Button variant="primary" onClick={openCreateModal}>
+          Create
+        </Button>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && (
+        <div className="alert alert-error" style={{ marginBottom: '16px' }}>
+          {error}
+        </div>
+      )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 16 }}>
+      <div className="card-grid">
         {roles.map((role) => (
-          <div key={role.id} className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+          <Card key={role.id}>
+            <div className="flex-between" style={{ marginBottom: '12px' }}>
               <div>
-                <h3 style={{ marginBottom: 4 }}>{role.name}</h3>
-                <p style={{ color: '#666', fontSize: 14 }}>{role.description || '无描述'}</p>
-                <p style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+                <h3 style={{ marginBottom: '4px', fontSize: '18px', fontWeight: 600 }}>
+                  {role.name}
+                </h3>
+                <p className="text-secondary" style={{ fontSize: '14px' }}>
+                  {role.description || 'No description'}
+                </p>
+                <p className="text-muted" style={{ fontSize: '12px', marginTop: '4px' }}>
                   {new Date(role.created_at).toLocaleString()}
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: 12 }} onClick={() => openEditModal(role)}>编辑</button>
-                <button className="btn btn-danger" style={{ padding: '4px 8px', fontSize: 12 }} onClick={() => handleDelete(role.id)}>删除</button>
+              <div className="flex gap-sm">
+                <Button variant="secondary" size="small" onClick={() => openEditModal(role)}>
+                  Edit
+                </Button>
+                <Button variant="danger" size="small" onClick={() => handleDelete(role.id)}>
+                  Delete
+                </Button>
               </div>
             </div>
-            
-            <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontWeight: 500, fontSize: 14 }}>权限 ({(rolePermissions[role.id] || []).length})</span>
+
+            <div style={{ borderTop: '1px solid #f2f3f5', paddingTop: '12px' }}>
+              <div className="flex-between" style={{ marginBottom: '8px' }}>
+                <span style={{ fontWeight: 500, fontSize: '14px', color: '#45515e' }}>
+                  Permissions ({(rolePermissions[role.id] || []).length})
+                </span>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+              <div className="tag-list" style={{ marginBottom: '8px' }}>
                 {(rolePermissions[role.id] || []).map((perm) => (
-                  <span key={perm.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#e6f7ff', color: '#1890ff', padding: '2px 8px', borderRadius: 4, fontSize: 12 }}>
+                  <Badge
+                    key={perm.id}
+                    variant="primary"
+                    closable
+                    onClose={() => handleRemovePermission(role.id, perm.id)}
+                  >
                     {perm.name}
-                    <button
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1890ff', padding: 0, fontSize: 14, lineHeight: 1 }}
-                      onClick={() => handleRemovePermission(role.id, perm.id)}
-                    >
-                      ×
-                    </button>
-                  </span>
+                  </Badge>
                 ))}
               </div>
               {getAvailablePermissions(role.id).length > 0 && (
                 <select
-                  style={{ width: '100%', padding: 6, fontSize: 12, borderRadius: 4, border: '1px solid #d9d9d9' }}
+                  style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '8px', border: '1px solid #e5e7eb' }}
                   onChange={(e) => {
                     if (e.target.value) {
                       handleAssignPermission(role.id, Number(e.target.value));
@@ -174,53 +194,54 @@ function Roles() {
                   }}
                   defaultValue=""
                 >
-                  <option value="">添加权限...</option>
+                  <option value="">Add permission...</option>
                   {getAvailablePermissions(role.id).map((perm) => (
                     <option key={perm.id} value={perm.id}>{perm.name}</option>
                   ))}
                 </select>
               )}
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
       {roles.length === 0 && (
-        <div className="card" style={{ textAlign: 'center', color: '#999' }}>
-          暂无角色，点击上方按钮创建
-        </div>
+        <Card>
+          <div className="empty-state">
+            <p>No roles</p>
+          </div>
+        </Card>
       )}
 
-      {showModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="card" style={{ width: 400 }}>
-            <h3 style={{ marginBottom: 16 }}>{editingRole ? '编辑角色' : '创建角色'}</h3>
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>名称</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>描述</label>
-                <input
-                  type="text"
-                  value={formData.description || ''}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>取消</button>
-                <button type="submit" className="btn btn-primary">提交</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingRole ? 'Edit Role' : 'Create Role'}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={() => handleSubmit()}>
+              Submit
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleSubmit}>
+          <Input
+            label="Name"
+            value={formData.name}
+            onChange={(value) => setFormData({ ...formData, name: value })}
+            required
+          />
+          <Input
+            label="Description"
+            value={formData.description || ''}
+            onChange={(value) => setFormData({ ...formData, description: value })}
+          />
+        </form>
+      </Modal>
     </div>
   );
 }
