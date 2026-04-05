@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import ChatSidebar from './ChatSidebar';
+import { authApi } from '../api';
 
 interface MenuItem {
   label: string;
@@ -89,20 +90,25 @@ function Layout() {
   const navigate = useNavigate();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [userInfo, setUserInfo] = useState<{ username: string; email?: string } | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Get user info from token
-  const getUserFromToken = () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return null;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload;
-    } catch {
-      return null;
+  // Get user info from /auth/me API
+  useEffect(() => {
+    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+    if (token) {
+      authApi.getMe().then((res) => {
+        setUserInfo({ username: res.data.username, email: res.data.email });
+      }).catch(() => {
+        // Token invalid, clear it
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        sessionStorage.removeItem('access_token');
+        sessionStorage.removeItem('refresh_token');
+        navigate('/login');
+      });
     }
-  };
-  const user = getUserFromToken();
+  }, [navigate]);
 
   // Close user menu on outside click
   useEffect(() => {
@@ -118,13 +124,9 @@ function Layout() {
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    sessionStorage.removeItem('access_token');
+    sessionStorage.removeItem('refresh_token');
     navigate('/login');
-  };
-
-  const getUserInitial = () => {
-    if (user?.username) return user.username.charAt(0).toUpperCase();
-    if (user?.sub) return user.sub.charAt(0).toUpperCase();
-    return 'U';
   };
 
   return (
@@ -167,36 +169,38 @@ function Layout() {
             {/* User Profile Dropdown */}
             <div ref={userMenuRef} style={{ position: 'relative' }}>
               <button
-                className="btn btn-secondary btn-small"
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  padding: '6px 12px',
-                  borderRadius: '20px',
+                  justifyContent: 'center',
+                  transition: 'background-color 0.2s',
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <div
                   style={{
-                    width: '28px',
-                    height: '28px',
+                    width: '36px',
+                    height: '36px',
                     borderRadius: '50%',
-                    backgroundColor: 'var(--primary-500)',
+                    background: 'linear-gradient(135deg, var(--primary-500) 0%, #764ba2 100%)',
                     color: 'white',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '13px',
+                    fontSize: '14px',
                     fontWeight: 600,
+                    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
                   }}
                 >
-                  {getUserInitial()}
+                  {userInfo?.username?.charAt(0).toUpperCase() || 'U'}
                 </div>
-                <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {user?.username || user?.sub || 'User'}
-                </span>
-                <span style={{ fontSize: '10px', transition: 'transform 0.2s', transform: isUserMenuOpen ? 'rotate(180deg)' : 'rotate(0)' }}>▼</span>
               </button>
               
               {/* Dropdown Menu */}
@@ -204,39 +208,27 @@ function Layout() {
                 <div
                   style={{
                     position: 'absolute',
-                    top: '100%',
+                    top: 'calc(100% + 8px)',
                     right: 0,
-                    marginTop: '8px',
                     backgroundColor: 'white',
                     borderRadius: '12px',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                    minWidth: '220px',
+                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
+                    minWidth: '200px',
                     overflow: 'hidden',
                     zIndex: 1000,
+                    animation: 'dropdownFadeIn 0.2s ease',
                   }}
                 >
+                  <style>{`
+                    @keyframes dropdownFadeIn {
+                      from { opacity: 0; transform: translateY(-8px); }
+                      to { opacity: 1; transform: translateY(0); }
+                    }
+                  `}</style>
                   {/* User Info Section */}
                   <div style={{ padding: '16px', borderBottom: '1px solid var(--border-light)' }}>
-                    <div style={{ fontWeight: 600, marginBottom: '4px' }}>{user?.username || user?.sub || 'User'}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>用户</div>
-                    {user?.roles && Array.isArray(user.roles) && user.roles.length > 0 && (
-                      <div style={{ marginTop: '8px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                        {user.roles.map((role: string) => (
-                          <span
-                            key={role}
-                            style={{
-                              fontSize: '11px',
-                              padding: '2px 8px',
-                              backgroundColor: 'var(--primary-100)',
-                              color: 'var(--primary-700)',
-                              borderRadius: '10px',
-                            }}
-                          >
-                            {role}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    <div style={{ fontWeight: 600, marginBottom: '4px', fontSize: '14px' }}>{userInfo?.username || 'User'}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{userInfo?.email || '用户'}</div>
                   </div>
                   {/* Logout Button */}
                   <button
