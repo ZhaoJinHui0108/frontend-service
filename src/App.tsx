@@ -6,6 +6,7 @@ import Roles from './pages/Roles';
 import Permissions from './pages/Permissions';
 import Init from './pages/Init';
 import Notes from './pages/Notes';
+import SensitiveConfigs from './pages/SensitiveConfigs';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,7 @@ function App() {
         <Route path='permissions' element={<Permissions />} />
         <Route path='init' element={<Init />} />
         <Route path='notes' element={<Notes />} />
+        <Route path='sensitive-configs' element={<SensitiveConfigs />} />
       </Route>
     </Routes>
   );

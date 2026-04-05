@@ -33,6 +33,7 @@ const menuItems: MenuItem[] = [
     icon: '⚙️',
     children: [
       { label: 'Init', path: '/init' },
+      { label: 'Sensitive Configs', path: '/sensitive-configs' },
     ],
   },
 ];
