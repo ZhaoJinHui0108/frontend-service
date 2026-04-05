@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import ChatSidebar from './ChatSidebar';
 
 interface MenuItem {
   label: string;
@@ -86,6 +87,7 @@ function MenuGroup({ item }: { item: MenuItem }) {
 
 function Layout() {
   const navigate = useNavigate();
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
@@ -115,6 +117,14 @@ function Layout() {
         <header className="topbar">
           <div className="topbar-spacer" />
           <div className="topbar-actions">
+            <button
+              className="btn btn-primary btn-small"
+              onClick={() => setIsChatOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <span>🤖</span>
+              <span>AI 助手</span>
+            </button>
             <button className="btn btn-secondary btn-small" onClick={handleLogout}>
               Logout
             </button>
@@ -124,6 +134,8 @@ function Layout() {
           <Outlet />
         </main>
       </div>
+
+      <ChatSidebar isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 }
