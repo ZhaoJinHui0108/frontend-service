@@ -27,6 +27,30 @@ function Notes() {
     fetchTree();
   }, []);
 
+  // Find the first leaf node (file) in the tree
+  const findFirstLeafNode = (nodes: FileNode[]): FileNode | null => {
+    for (const node of nodes) {
+      if (node.type === 'file') {
+        return node;
+      }
+      if (node.type === 'directory' && node.children) {
+        const found = findFirstLeafNode(node.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // Auto-select first leaf node when tree loads
+  useEffect(() => {
+    if (tree.length > 0 && !selectedFile) {
+      const firstLeaf = findFirstLeafNode(tree);
+      if (firstLeaf) {
+        handleSelectFile(firstLeaf);
+      }
+    }
+  }, [tree, selectedFile]);
+
   const handleSelectFile = async (node: FileNode) => {
     if (node.type === 'directory') {
       const newExpanded = new Set(expandedDirs);
@@ -62,12 +86,12 @@ function Notes() {
     return nodes.map((node) => (
       <div key={node.path}>
         <div
-          className="tree-item"
+          className={`tree-item ${selectedFile === node.path ? 'selected' : ''}`}
           style={{ paddingLeft: level * 16 + 8 + 'px' }}
           onClick={() => handleSelectFile(node)}
         >
           <span className="tree-icon">
-            {node.type === 'directory' ? (expandedDirs.has(node.path) ? '[-]' : '[+]') : '[f]'}
+            {node.type === 'directory' ? (expandedDirs.has(node.path) ? '[-]' : '[+]') : (selectedFile === node.path ? '>' : 'o')}
           </span>
           <span className="tree-name">{node.name}</span>
         </div>
