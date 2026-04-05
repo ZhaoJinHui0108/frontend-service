@@ -63,6 +63,8 @@ api.interceptors.response.use(
 
 export const authApi = {
   login: (data: LoginRequest) => api.post<Token>('/auth/login', data),
+  register: (data: { username: string; password: string }) =>
+    api.post<Token>('/auth/register', data),
   refresh: (refreshToken: string) =>
     api.post<Token>('/auth/refresh', { refresh_token: refreshToken }),
   getMe: () => api.get<UserWithRoles>('/auth/me'),
