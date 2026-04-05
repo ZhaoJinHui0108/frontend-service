@@ -26,7 +26,7 @@ export const sensitiveConfigApi = {
   },
 
   getConfig: (id: number) => {
-    return axios.get<SensitiveConfig>(`/sensitive-configs/${id}/`);
+    return axios.get<SensitiveConfig>(`/sensitive-configs/${id}`);
   },
 
   createConfig: (data: SensitiveConfigCreate) => {
@@ -34,10 +34,10 @@ export const sensitiveConfigApi = {
   },
 
   updateConfig: (id: number, data: SensitiveConfigUpdate) => {
-    return axios.put<SensitiveConfig>(`/sensitive-configs/${id}/`, data);
+    return axios.put<SensitiveConfig>(`/sensitive-configs/${id}`, data);
   },
 
   deleteConfig: (id: number) => {
-    return axios.delete(`/sensitive-configs/${id}/`);
+    return axios.delete(`/sensitive-configs/${id}`);
   },
 };
