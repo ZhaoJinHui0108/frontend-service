@@ -9,15 +9,15 @@ function Init() {
   const [adminUsername, setAdminUsername] = useState('admin');
   const [adminPassword, setAdminPassword] = useState('admin123');
 
-  const handleInit = async (action: 'tables' | 'data' | 'all' | 'drop') => {
+  const handleInit = async (action: 'update' | 'data' | 'all' | 'drop') => {
     setLoading(true);
     setMessage('');
     setError('');
     try {
       let res;
       switch (action) {
-        case 'tables':
-          res = await initApi.createTables();
+        case 'update':
+          res = await initApi.updateTables();
           setMessage(res.data.message);
           break;
         case 'data':
@@ -84,10 +84,10 @@ function Init() {
           </Button>
           <Button
             variant="secondary"
-            onClick={() => handleInit('tables')}
+            onClick={() => handleInit('update')}
             disabled={loading}
           >
-            创建表
+            更新表结构
           </Button>
           <Button
             variant="secondary"
@@ -108,9 +108,9 @@ function Init() {
 
       <Card title="说明">
         <ul style={{ paddingLeft: '20px', lineHeight: '1.8', color: '#45515e' }}>
-          <li><strong>完整初始化：</strong>创建所有表并初始化数据（角色、权限、管理员用户）</li>
-          <li><strong>创建表：</strong>仅创建数据库表结构</li>
-          <li><strong>初始化数据：</strong>创建默认角色、权限和管理员用户</li>
+          <li><strong>完整初始化：</strong>更新所有表结构并初始化数据（角色、权限、管理员用户）</li>
+          <li><strong>更新表结构：</strong>执行所有DDL语句，创建新表或新增缺失的列（幂等操作，可重复执行）</li>
+          <li><strong>初始化数据：</strong>创建默认角色、权限和管理员用户（已存在则跳过）</li>
           <li><strong>删除所有表：</strong>删除所有数据库表（数据将丢失）</li>
         </ul>
         <p style={{ marginTop: '16px', color: '#8e8e93', fontSize: '14px' }}>

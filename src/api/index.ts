@@ -103,7 +103,7 @@ export const permissionApi = {
 };
 
 export const initApi = {
-  createTables: () => api.post<{ message: string }>('/init/tables'),
+  updateTables: () => api.post<{ message: string }>('/init/update'),
   initData: (adminUsername?: string, adminPassword?: string) =>
     api.post<InitResponse>('/init/data', { admin_username: adminUsername, admin_password: adminPassword }),
   initAll: (adminUsername?: string, adminPassword?: string) =>
