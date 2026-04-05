@@ -8,6 +8,7 @@ import Init from './pages/Init';
 import Notes from './pages/Notes';
 import SensitiveConfigs from './pages/SensitiveConfigs';
 import AILearning from './pages/AILearning';
+import ScheduledTasks from './pages/ScheduledTasks';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -38,6 +39,7 @@ function App() {
         <Route path='notes' element={<Notes />} />
         <Route path='sensitive-configs' element={<SensitiveConfigs />} />
         <Route path='ai-learning' element={<AILearning />} />
+        <Route path='scheduled-tasks' element={<ScheduledTasks />} />
       </Route>
     </Routes>
   );

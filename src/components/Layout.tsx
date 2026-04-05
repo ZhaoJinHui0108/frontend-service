@@ -22,6 +22,11 @@ const menuItems: MenuItem[] = [
     icon: '🤖',
   },
   {
+    label: '定时任务',
+    path: '/scheduled-tasks',
+    icon: '⏰',
+  },
+  {
     label: 'Notes',
     path: '/notes',
     icon: '📝',
