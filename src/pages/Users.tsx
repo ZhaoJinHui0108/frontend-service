@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { userApi, roleApi } from '../api';
 import type { User, UserCreate, UserUpdate, Role } from '../types';
+import { Button, Card, Badge, Modal, Input, Select } from '../components/ui';
 
 function Users() {
   const [users, setUsers] = useState<User[]>([]);
@@ -58,8 +59,8 @@ function Users() {
     });
   }, [users]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError('');
     try {
       if (editingUser) {
@@ -122,6 +123,12 @@ function Users() {
     setShowModal(true);
   };
 
+  const openCreateModal = () => {
+    setEditingUser(null);
+    setFormData({ username: '', email: '', password: '' });
+    setShowModal(true);
+  };
+
   const getAvailableRoles = (userId: number) => {
     const assignedIds = new Set((userRoles[userId] || []).map(r => r.id));
     return roles.filter(r => !assignedIds.has(r.id));
@@ -132,136 +139,140 @@ function Users() {
   }
 
   return (
-    <div>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="page-content">
+      <div className="page-header flex-between">
         <h1>用户管理</h1>
-        <button className="btn btn-primary" onClick={() => { setEditingUser(null); setFormData({ username: '', email: '', password: '' }); setShowModal(true); }}>
+        <Button variant="primary" onClick={openCreateModal}>
           创建用户
-        </button>
+        </Button>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && (
+        <div className="alert alert-error" style={{ marginBottom: '16px' }}>
+          {error}
+        </div>
+      )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 16 }}>
+      <div className="card-grid">
         {users.map((user) => (
-          <div key={user.id} className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+          <Card key={user.id}>
+            <div className="flex-between" style={{ marginBottom: '12px' }}>
               <div>
-                <h3 style={{ marginBottom: 4 }}>{user.username}</h3>
-                <p style={{ color: '#666', fontSize: 14 }}>{user.email}</p>
-                <p style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+                <h3 style={{ marginBottom: '4px', fontSize: '18px', fontWeight: 600 }}>
+                  {user.username}
+                </h3>
+                <p className="text-secondary" style={{ fontSize: '14px' }}>
+                  {user.email}
+                </p>
+                <p className="text-muted" style={{ fontSize: '12px', marginTop: '4px' }}>
                   {new Date(user.created_at).toLocaleString()}
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: 12 }} onClick={() => openEditModal(user)}>编辑</button>
-                <button className="btn btn-danger" style={{ padding: '4px 8px', fontSize: 12 }} onClick={() => handleDelete(user.id)}>删除</button>
+              <div className="flex gap-sm">
+                <Button variant="secondary" size="small" onClick={() => openEditModal(user)}>
+                  编辑
+                </Button>
+                <Button variant="danger" size="small" onClick={() => handleDelete(user.id)}>
+                  删除
+                </Button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              <span className={`badge ${user.is_active ? 'badge-active' : 'badge-inactive'}`}>
+            <div className="flex gap-sm" style={{ marginBottom: '12px' }}>
+              <Badge variant={user.is_active ? 'success' : 'error'}>
                 {user.is_active ? '激活' : '禁用'}
-              </span>
-              {user.is_superuser && <span className="badge badge-superuser">超级用户</span>}
+              </Badge>
+              {user.is_superuser && <Badge variant="primary">超级用户</Badge>}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <button
-                className={`btn btn-sm ${user.is_active ? 'btn-danger' : 'btn-primary'}`}
-                style={{ padding: '2px 8px', fontSize: 12 }}
-                onClick={() => handleToggleActive(user)}
-              >
-                {user.is_active ? '禁用' : '启用'}
-              </button>
-            </div>
+            <Button
+              variant={user.is_active ? 'secondary' : 'primary'}
+              size="small"
+              onClick={() => handleToggleActive(user)}
+            >
+              {user.is_active ? '禁用' : '启用'}
+            </Button>
 
-            <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontWeight: 500, fontSize: 14 }}>角色 ({(userRoles[user.id] || []).length})</span>
+            <div style={{ borderTop: '1px solid #f2f3f5', paddingTop: '12px', marginTop: '12px' }}>
+              <div className="flex-between" style={{ marginBottom: '8px' }}>
+                <span style={{ fontWeight: 500, fontSize: '14px', color: '#45515e' }}>
+                  角色 ({(userRoles[user.id] || []).length})
+                </span>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+              <div className="tag-list" style={{ marginBottom: '8px' }}>
                 {(userRoles[user.id] || []).map((role) => (
-                  <span key={role.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#f6ffed', color: '#52c41a', padding: '2px 8px', borderRadius: 4, fontSize: 12 }}>
+                  <Badge key={role.id} variant="success" closable onClose={() => handleRemoveRole(user.id, role.id)}>
                     {role.name}
-                    <button
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#52c41a', padding: 0, fontSize: 14, lineHeight: 1 }}
-                      onClick={() => handleRemoveRole(user.id, role.id)}
-                    >
-                      ×
-                    </button>
-                  </span>
+                  </Badge>
                 ))}
               </div>
               {getAvailableRoles(user.id).length > 0 && (
-                <select
-                  style={{ width: '100%', padding: 6, fontSize: 12, borderRadius: 4, border: '1px solid #d9d9d9' }}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      handleAssignRole(user.id, Number(e.target.value));
-                      e.target.value = '';
+                <Select
+                  value=""
+                  onChange={(value) => {
+                    if (value) {
+                      handleAssignRole(user.id, Number(value));
                     }
                   }}
-                  defaultValue=""
-                >
-                  <option value="">添加角色...</option>
-                  {getAvailableRoles(user.id).map((role) => (
-                    <option key={role.id} value={role.id}>{role.name}</option>
-                  ))}
-                </select>
+                  options={getAvailableRoles(user.id).map((role) => ({
+                    label: role.name,
+                    value: role.id,
+                  }))}
+                  placeholder="添加角色..."
+                />
               )}
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
       {users.length === 0 && (
-        <div className="card" style={{ textAlign: 'center', color: '#999' }}>
-          暂无用户，点击上方按钮创建
-        </div>
+        <Card>
+          <div className="empty-state">
+            <p>暂无用户，点击上方按钮创建</p>
+          </div>
+        </Card>
       )}
 
-      {showModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="card" style={{ width: 400 }}>
-            <h3 style={{ marginBottom: 16 }}>{editingUser ? '编辑用户' : '创建用户'}</h3>
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>用户名</label>
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  disabled={!!editingUser}
-                  required={!editingUser}
-                />
-              </div>
-              <div className="form-group">
-                <label>邮箱</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>密码 {editingUser && '(留空则不修改)'}</label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required={!editingUser}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>取消</button>
-                <button type="submit" className="btn btn-primary">提交</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingUser ? '编辑用户' : '创建用户'}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowModal(false)}>
+              取消
+            </Button>
+            <Button variant="primary" onClick={() => handleSubmit()}>
+              提交
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleSubmit}>
+          <Input
+            label="用户名"
+            value={formData.username}
+            onChange={(value) => setFormData({ ...formData, username: value })}
+            disabled={!!editingUser}
+            required={!editingUser}
+          />
+          <Input
+            label="邮箱"
+            type="email"
+            value={formData.email}
+            onChange={(value) => setFormData({ ...formData, email: value })}
+            required
+          />
+          <Input
+            label={`密码 ${editingUser ? '(留空则不修改)' : ''}`}
+            type="password"
+            value={formData.password}
+            onChange={(value) => setFormData({ ...formData, password: value })}
+            required={!editingUser}
+          />
+        </form>
+      </Modal>
     </div>
   );
 }

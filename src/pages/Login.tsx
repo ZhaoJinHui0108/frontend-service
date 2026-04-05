@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../api';
+import { Button, Input } from '../components/ui';
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -20,47 +21,45 @@ function Login() {
       localStorage.setItem('refresh_token', data.refresh_token);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.detail || '登录失败');
+      setError(err.response?.data?.detail || '登录失败，请检查用户名和密码');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#f5f5f5',
-      }}
-    >
-      <div className="card" style={{ width: 400 }}>
-        <h2 style={{ marginBottom: 24, textAlign: 'center' }}>用户登录</h2>
-        {error && <div className="alert alert-error">{error}</div>}
+    <div className="login-page">
+      <div className="login-card">
+        <h2>用户登录</h2>
+        {error && (
+          <div className="alert alert-error" style={{ marginBottom: '16px' }}>
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>用户名</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>密码</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+          <Input
+            label="用户名"
+            value={username}
+            onChange={setUsername}
+            placeholder="请输入用户名"
+            required
+          />
+          <Input
+            label="密码"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            placeholder="请输入密码"
+            required
+          />
+          <Button
+            type="submit"
+            variant="primary"
+            style={{ width: '100%', marginTop: '8px' }}
+            disabled={loading}
+          >
             {loading ? '登录中...' : '登录'}
-          </button>
+          </Button>
         </form>
       </div>
     </div>

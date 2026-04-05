@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { permissionApi } from '../api';
 import type { Permission, PermissionCreate, PermissionUpdate } from '../types';
+import { Button, Card, Badge, Modal, Input, Table } from '../components/ui';
 
 function Permissions() {
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -15,7 +16,7 @@ function Permissions() {
       const { data } = await permissionApi.list();
       setPermissions(data);
     } catch (err: any) {
-      setError(err.response?.data?.detail || '获取权限列表失败');
+      setError(err.response?.data?.detail || 'Failed to load permissions');
     } finally {
       setLoading(false);
     }
@@ -25,8 +26,8 @@ function Permissions() {
     fetchPermissions();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError('');
     try {
       if (editingPermission) {
@@ -42,17 +43,17 @@ function Permissions() {
       setFormData({ name: '', description: '' });
       fetchPermissions();
     } catch (err: any) {
-      setError(err.response?.data?.detail || '操作失败');
+      setError(err.response?.data?.detail || 'Operation failed');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除这个权限吗？')) return;
+    if (!confirm('Are you sure?')) return;
     try {
       await permissionApi.delete(id);
       fetchPermissions();
     } catch (err: any) {
-      setError(err.response?.data?.detail || '删除失败');
+      setError(err.response?.data?.detail || 'Delete failed');
     }
   };
 
@@ -62,85 +63,108 @@ function Permissions() {
     setShowModal(true);
   };
 
+  const openCreateModal = () => {
+    setEditingPermission(null);
+    setFormData({ name: '', description: '' });
+    setShowModal(true);
+  };
+
+  const columns = [
+    { key: 'id', label: 'ID', width: '80px' },
+    {
+      key: 'name',
+      label: 'Name',
+      render: (value: string) => <Badge variant="muted">{value}</Badge>,
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      render: (value: string) => value || '-',
+    },
+    {
+      key: 'created_at',
+      label: 'Created',
+      render: (value: string) => (
+        <span className="text-muted" style={{ fontSize: '13px' }}>
+          {new Date(value).toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      align: 'right' as const,
+      render: (_: any, row: any) => (
+        <div className="actions">
+          <Button variant="secondary" size="small" onClick={() => openEditModal(row)}>
+            Edit
+          </Button>
+          <Button variant="danger" size="small" onClick={() => handleDelete(row.id)}>
+            Delete
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   if (loading) {
-    return <div className="loading">加载中...</div>;
+    return <div className="loading">Loading...</div>;
   }
 
   return (
-    <div>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>权限管理</h1>
-        <button className="btn btn-primary" onClick={() => { setEditingPermission(null); setFormData({ name: '', description: '' }); setShowModal(true); }}>
-          创建权限
-        </button>
+    <div className="page-content">
+      <div className="page-header flex-between">
+        <h1>Permissions</h1>
+        <Button variant="primary" onClick={openCreateModal}>
+          Create
+        </Button>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
-
-      <div className="card">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>名称</th>
-              <th>描述</th>
-              <th>创建时间</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {permissions.map((permission) => (
-              <tr key={permission.id}>
-                <td>{permission.id}</td>
-                <td>{permission.name}</td>
-                <td>{permission.description || '-'}</td>
-                <td>{new Date(permission.created_at).toLocaleString()}</td>
-                <td className="actions">
-                  <button className="btn btn-secondary" onClick={() => openEditModal(permission)}>编辑</button>
-                  <button className="btn btn-danger" onClick={() => handleDelete(permission.id)}>删除</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {permissions.length === 0 && (
-        <div className="card" style={{ textAlign: 'center', color: '#999' }}>
-          暂无权限，点击上方按钮创建
+      {error && (
+        <div className="alert alert-error" style={{ marginBottom: '16px' }}>
+          {error}
         </div>
       )}
 
-      {showModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="card" style={{ width: 400 }}>
-            <h3 style={{ marginBottom: 16 }}>{editingPermission ? '编辑权限' : '创建权限'}</h3>
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>名称</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>描述</label>
-                <input
-                  type="text"
-                  value={formData.description || ''}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>取消</button>
-                <button type="submit" className="btn btn-primary">提交</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Card noPadding>
+        <Table
+          columns={columns}
+          data={permissions}
+          emptyText="No permissions"
+        />
+      </Card>
+
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingPermission ? 'Edit Permission' : 'Create Permission'}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={() => handleSubmit()}>
+              Submit
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleSubmit}>
+          <Input
+            label="Name"
+            value={formData.name}
+            onChange={(value) => setFormData({ ...formData, name: value })}
+            placeholder="e.g. create_user"
+            required
+          />
+          <Input
+            label="Description"
+            value={formData.description || ''}
+            onChange={(value) => setFormData({ ...formData, description: value })}
+            placeholder="Permission description"
+          />
+        </form>
+      </Modal>
     </div>
   );
 }

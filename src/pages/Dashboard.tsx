@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { authApi, userApi, roleApi, permissionApi } from '../api';
 import type { UserWithRoles } from '../types';
+import { Card, Badge } from '../components/ui';
 
 function Dashboard() {
   const [user, setUser] = useState<UserWithRoles | null>(null);
@@ -36,44 +37,45 @@ function Dashboard() {
   }
 
   return (
-    <div>
+    <div className="page-content">
       <div className="page-header">
         <h1>仪表盘</h1>
       </div>
 
-      <div style={{ marginBottom: 24 }}>
-        <h3>欢迎, {user?.username}</h3>
-        <p style={{ color: '#666' }}>
+      <Card style={{ marginBottom: '24px' }}>
+        <h3 style={{ marginBottom: '8px', fontSize: '20px', fontWeight: 600 }}>
+          欢迎, {user?.username}
+        </h3>
+        <p className="text-secondary" style={{ fontSize: '14px' }}>
           {user?.is_superuser ? '超级管理员' : '普通用户'} | {user?.email}
         </p>
-      </div>
+      </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-        <div className="card">
+      <div className="stats-grid">
+        <Card>
           <h4>用户数量</h4>
-          <p style={{ fontSize: 32, fontWeight: 'bold', color: '#1890ff' }}>{stats.users}</p>
-        </div>
-        <div className="card">
+          <div className="value users">{stats.users}</div>
+        </Card>
+        <Card>
           <h4>角色数量</h4>
-          <p style={{ fontSize: 32, fontWeight: 'bold', color: '#52c41a' }}>{stats.roles}</p>
-        </div>
-        <div className="card">
+          <div className="value roles">{stats.roles}</div>
+        </Card>
+        <Card>
           <h4>权限数量</h4>
-          <p style={{ fontSize: 32, fontWeight: 'bold', color: '#722ed1' }}>{stats.permissions}</p>
-        </div>
+          <div className="value permissions">{stats.permissions}</div>
+        </Card>
       </div>
 
       {user?.roles && user.roles.length > 0 && (
-        <div className="card" style={{ marginTop: 20 }}>
-          <h4 style={{ marginBottom: 12 }}>我的角色</h4>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Card title="我的角色">
+          <div className="tag-list">
             {user.roles.map((role) => (
-              <span key={role.id} className="badge badge-active">
+              <Badge key={role.id} variant="success">
                 {role.name}
-              </span>
+              </Badge>
             ))}
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
