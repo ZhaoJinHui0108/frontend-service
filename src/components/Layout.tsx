@@ -17,6 +17,11 @@ const menuItems: MenuItem[] = [
     icon: '📊',
   },
   {
+    label: 'AI 学习',
+    path: '/ai-learning',
+    icon: '🤖',
+  },
+  {
     label: 'Notes',
     path: '/notes',
     icon: '📝',
