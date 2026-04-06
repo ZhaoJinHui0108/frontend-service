@@ -143,8 +143,8 @@ const ScheduledTasks: React.FC = () => {
     <div className="page-content">
       <div className="page-header flex-between">
         <div>
-          <h1>⏰ 定时任务</h1>
-          <p className="text-secondary" style={{ marginTop: '4px' }}>管理 AI 学习任务的定时调度</p>
+          <h1 style={{ margin: 0 }}>⏰ 定时任务</h1>
+          <p className="text-secondary" style={{ marginTop: '4px', marginBottom: 0 }}>管理 AI 学习任务的定时调度</p>
         </div>
         <Button variant="primary" onClick={handleCreate}>
           + 新建定时任务

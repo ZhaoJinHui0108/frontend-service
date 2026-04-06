@@ -9,13 +9,14 @@ interface Props {
   onTrainingComplete: () => void;
   hideActions?: boolean;
   onStartTraining?: () => void;
+  showStatusHeader?: boolean;
 }
 
 export interface ModelParamsConfigRef {
   startTraining: () => void;
 }
 
-const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model, onTrainingComplete, hideActions, onStartTraining }, _ref) => {
+const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model, onTrainingComplete, hideActions, onStartTraining, showStatusHeader }, _ref) => {
   const [modelParams, setModelParams] = useState<Record<string, any>>(() => {
     const defaults: Record<string, any> = {};
     model.params.forEach((param) => {
@@ -67,9 +68,8 @@ const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model
           if (jobData.status === 'completed' || jobData.status === 'failed') {
             clearInterval(interval);
             setPollInterval(null);
-            if (jobData.status === 'completed') {
-              setTimeout(onTrainingComplete, 1500);
-            }
+            // Call onTrainingComplete for both success and failure so user sees the result
+            setTimeout(onTrainingComplete, jobData.status === 'completed' ? 1500 : 0);
           }
         } catch (err) {
           console.error('轮询失败:', err);
@@ -89,6 +89,14 @@ const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model
       clearInterval(pollInterval);
       setPollInterval(null);
     }
+  };
+
+  // Safely format progress percentage
+  const formatProgress = (progress: number | undefined | null): string => {
+    if (progress === undefined || progress === null || isNaN(progress)) {
+      return '0';
+    }
+    return (progress * 100).toFixed(0);
   };
 
   // Expose startTraining for parent component
@@ -297,6 +305,51 @@ const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model
 
   return (
     <div>
+      {/* 训练状态 - 显示在顶部 */}
+      {showStatusHeader && trainingJob && (
+        <Card style={{ marginBottom: '16px', borderLeft: '4px solid ' + (trainingJob.status === 'failed' ? 'var(--error)' : trainingJob.status === 'completed' ? 'var(--success)' : 'var(--primary-500)') }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <span style={{
+                padding: '6px 16px',
+                borderRadius: '20px',
+                fontSize: '14px',
+                fontWeight: 600,
+                backgroundColor: trainingJob.status === 'running' ? 'rgba(59, 130, 246, 0.1)' :
+                               trainingJob.status === 'completed' ? 'var(--success-bg)' :
+                               trainingJob.status === 'failed' ? 'var(--error-bg)' : 'var(--warning-bg)',
+                color: trainingJob.status === 'running' ? 'var(--primary-500)' :
+                       trainingJob.status === 'completed' ? 'var(--success)' :
+                       trainingJob.status === 'failed' ? 'var(--error)' : 'var(--warning)',
+              }}>
+                {trainingJob.status === 'pending' && '⏳ 等待中'}
+                {trainingJob.status === 'running' && '🔄 训练中...'}
+                {trainingJob.status === 'completed' && '✅ 训练完成'}
+                {trainingJob.status === 'failed' && '❌ 训练失败'}
+              </span>
+              <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                进度: {formatProgress(trainingJob.progress)}%
+              </span>
+              {trainingJob.error && (
+                <span style={{ fontSize: '13px', color: 'var(--error)' }}>
+                  错误: {trainingJob.error}
+                </span>
+              )}
+            </div>
+            <div style={{ flex: 1, maxWidth: '200px', minWidth: '100px' }}>
+              <div style={{ height: '6px', backgroundColor: 'var(--bg-secondary)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${formatProgress(trainingJob.progress)}%`,
+                  backgroundColor: trainingJob.status === 'completed' ? 'var(--success)' : 'var(--primary-500)',
+                  transition: 'width 0.3s ease',
+                }} />
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* 模型参数 */}
       <Card style={{ marginBottom: '16px' }}>
         <div style={{ marginBottom: '16px' }}>
@@ -390,7 +443,7 @@ const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model
                 {trainingJob.status === 'failed' && '❌ 训练失败'}
               </span>
               <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-                进度: {(trainingJob.progress * 100).toFixed(0)}%
+                进度: {formatProgress(trainingJob.progress)}%
               </span>
             </div>
 
@@ -403,11 +456,18 @@ const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model
             }}>
               <div style={{
                 height: '100%',
-                width: `${trainingJob.progress * 100}%`,
+                width: `${formatProgress(trainingJob.progress)}%`,
                 backgroundColor: trainingJob.status === 'completed' ? 'var(--success)' : 'var(--primary-500)',
                 transition: 'width 0.3s ease',
               }} />
             </div>
+
+            {/* 错误信息 */}
+            {trainingJob.error && (
+              <div className="alert alert-error" style={{ marginBottom: '12px' }}>
+                <strong>训练失败:</strong> {trainingJob.error}
+              </div>
+            )}
 
             {/* 实时指标 */}
             {trainingJob.metrics && trainingJob.status === 'running' && (

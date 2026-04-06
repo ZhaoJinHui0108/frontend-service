@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import ChatSidebar from './ChatSidebar';
 import { authApi } from '../api';
 
@@ -61,6 +61,12 @@ const menuItems: MenuItem[] = [
 
 function MenuGroup({ item, isOpen, onToggle }: { item: MenuItem; isOpen: boolean; onToggle: () => void }) {
   const hasChildren = item.children && item.children.length > 0;
+  const location = useLocation();
+
+  // Exact match for child paths
+  const isChildActive = (childPath: string) => {
+    return location.pathname + location.search === childPath;
+  };
 
   if (hasChildren) {
     return (
@@ -79,9 +85,7 @@ function MenuGroup({ item, isOpen, onToggle }: { item: MenuItem; isOpen: boolean
               <NavLink
                 key={child.path}
                 to={child.path!}
-                className={({ isActive }) =>
-                  `menu-child ${isActive ? 'active' : ''}`
-                }
+                className={isChildActive(child.path!) ? 'menu-child active' : 'menu-child'}
               >
                 {child.label}
               </NavLink>

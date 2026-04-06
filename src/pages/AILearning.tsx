@@ -290,6 +290,7 @@ const AILearning: React.FC = () => {
         model={selectedModel!}
         onTrainingComplete={handleTrainingComplete}
         hideActions={true}
+        showStatusHeader={true}
       />
     </div>
   );
