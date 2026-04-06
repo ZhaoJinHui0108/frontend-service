@@ -24,6 +24,21 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Error interceptor to clean up error messages
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.data?.detail) {
+      // Use only the detail message, not the full URL path
+      error.message = error.response.data.detail;
+    } else if (error.message) {
+      // Remove URL paths from error message if present
+      error.message = error.message.replace(/http:\/\/[^/]+\/services\/user\/api\/v1\//g, '');
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const aiLearningApi = {
   // 获取任务列表
   listTasks: (taskType?: TaskType) =>
