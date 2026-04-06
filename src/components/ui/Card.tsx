@@ -7,11 +7,16 @@ export interface CardProps {
   noPadding?: boolean;
   className?: string;
   style?: React.CSSProperties;
+  onClick?: () => void;
 }
 
-export function Card({ title, children, actions, noPadding = false, className = '', style }: CardProps) {
+export function Card({ title, children, actions, noPadding = false, className = '', style, onClick }: CardProps) {
   return (
-    <div className={`card ${className}`} style={style}>
+    <div 
+      className={`card ${className}`} 
+      style={style}
+      onClick={onClick}
+    >
       {(title || actions) && (
         <div className="card-header">
           {title && <h3 className="card-title">{title}</h3>}

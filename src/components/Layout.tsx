@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import ChatSidebar from './ChatSidebar';
 import { authApi } from '../api';
 
@@ -59,16 +59,16 @@ const menuItems: MenuItem[] = [
   },
 ];
 
-function MenuGroup({ item }: { item: MenuItem }) {
-  const [isOpen, setIsOpen] = useState(true);
+function MenuGroup({ item, isOpen, onToggle }: { item: MenuItem; isOpen: boolean; onToggle: () => void }) {
   const hasChildren = item.children && item.children.length > 0;
+  const location = useNavigate();
 
   if (hasChildren) {
     return (
       <div className="menu-group">
         <button
           className="menu-parent"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={onToggle}
         >
           <span className="menu-icon">{item.icon}</span>
           <span className="menu-label">{item.label}</span>
@@ -107,10 +107,14 @@ function MenuGroup({ item }: { item: MenuItem }) {
 
 function Layout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [userInfo, setUserInfo] = useState<{ username: string; email?: string } | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  
+  // Track which menu group is open - only one at a time
+  const [openMenus, setOpenMenus] = useState<Set<string>>(new Set(['Dashboard']));
 
   // Get user info from /auth/me API
   useEffect(() => {
@@ -119,7 +123,6 @@ function Layout() {
       authApi.getMe().then((res) => {
         setUserInfo({ username: res.data.username, email: res.data.email });
       }).catch(() => {
-        // Token invalid, clear it
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         sessionStorage.removeItem('access_token');
@@ -148,6 +151,20 @@ function Layout() {
     navigate('/login');
   };
 
+  const handleMenuToggle = (label: string) => {
+    setOpenMenus(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(label)) {
+        newSet.delete(label);
+      } else {
+        // Keep only the clicked menu open
+        newSet.clear();
+        newSet.add(label);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <div className="layout">
       <aside className="sidebar">
@@ -162,7 +179,12 @@ function Layout() {
         </div>
         <nav className="sidebar-nav">
           {menuItems.map((item) => (
-            <MenuGroup key={item.label} item={item} />
+            <MenuGroup 
+              key={item.label} 
+              item={item} 
+              isOpen={openMenus.has(item.label)}
+              onToggle={() => item.children ? handleMenuToggle(item.label) : null}
+            />
           ))}
         </nav>
       </aside>
@@ -249,6 +271,33 @@ function Layout() {
                     <div style={{ fontWeight: 600, marginBottom: '4px', fontSize: '14px' }}>{userInfo?.username || 'User'}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{userInfo?.email || '用户'}</div>
                   </div>
+                  {/* Settings Button */}
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      navigate('/sensitive-configs');
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      color: 'var(--text-primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <span>⚙️</span>
+                    <span>设置</span>
+                  </button>
+                  {/* Divider */}
+                  <div style={{ height: '1px', backgroundColor: 'var(--border-light)' }} />
                   {/* Logout Button */}
                   <button
                     onClick={handleLogout}

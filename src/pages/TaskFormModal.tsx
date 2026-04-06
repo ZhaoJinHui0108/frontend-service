@@ -168,6 +168,8 @@ const TaskFormModal: React.FC<Props> = ({ task, onClose, onSuccess }) => {
 
   const ParamHelpTooltip = ({ text }: { text: string }) => {
     const [show, setShow] = useState(false);
+    const tooltipRef = useRef<HTMLDivElement>(null);
+    
     return (
       <span style={{ position: 'relative', marginLeft: '4px', display: 'inline-flex', alignItems: 'center' }}>
         <button
@@ -196,29 +198,33 @@ const TaskFormModal: React.FC<Props> = ({ task, onClose, onSuccess }) => {
         </button>
         {show && (
           <div
+            ref={tooltipRef}
             style={{
               position: 'absolute',
               bottom: '100%',
-              left: '50%',
-              transform: 'translateX(-50%)',
+              left: 0,
+              transform: 'translateX(0)',
               backgroundColor: 'var(--text-heading)',
               color: 'white',
               padding: '8px 12px',
               borderRadius: '8px',
               fontSize: '12px',
-              width: '200px',
+              maxWidth: '300px',
+              minWidth: '100px',
               zIndex: 100,
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               marginBottom: '8px',
               lineHeight: 1.4,
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
             }}
           >
             {text}
             <div style={{
               position: 'absolute',
               top: '100%',
-              left: '50%',
-              transform: 'translateX(-50%)',
+              left: '12px',
+              transform: 'translateX(0)',
               border: '6px solid transparent',
               borderTopColor: 'var(--text-heading)',
             }} />

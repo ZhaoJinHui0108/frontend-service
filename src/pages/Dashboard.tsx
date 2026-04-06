@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authApi, userApi, roleApi, permissionApi } from '../api';
+import { authApi } from '../api';
 import { aiLearningApi } from '../api/aiLearning';
 import { scheduledTasksApi } from '../api/scheduledTasks';
 import type { UserWithRoles } from '../types';
@@ -9,25 +9,19 @@ import { Card, Badge } from '../components/ui';
 function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState<UserWithRoles | null>(null);
-  const [stats, setStats] = useState({ users: 0, roles: 0, permissions: 0, aiTasks: 0, scheduledTasks: 0 });
+  const [stats, setStats] = useState({ aiTasks: 0, scheduledTasks: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [userRes, usersRes, rolesRes, permissionsRes, aiTasksRes, scheduledTasksRes] = await Promise.all([
+        const [userRes, aiTasksRes, scheduledTasksRes] = await Promise.all([
           authApi.getMe(),
-          userApi.list().catch(() => ({ data: [] })),
-          roleApi.list().catch(() => ({ data: [] })),
-          permissionApi.list().catch(() => ({ data: [] })),
           aiLearningApi.listTasks().catch(() => ({ data: [] })),
           scheduledTasksApi.listTasks().catch(() => ({ data: [] })),
         ]);
         setUser(userRes.data);
         setStats({
-          users: usersRes.data.length,
-          roles: rolesRes.data.length,
-          permissions: permissionsRes.data.length,
           aiTasks: aiTasksRes.data.length,
           scheduledTasks: scheduledTasksRes.data.length,
         });
@@ -74,7 +68,7 @@ function Dashboard() {
       icon: '👥',
       iconBg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
       path: '/users',
-      stats: `${stats.users} 用户`,
+      stats: '',
       color: '#38f9d7',
     },
     {
@@ -121,60 +115,61 @@ function Dashboard() {
       </Card>
 
       {/* Module Cards */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600 }}>快速访问</h2>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: '16px',
-        }}>
-          {moduleCards.map((module) => (
-            <Card
-              key={module.title}
-              style={{
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                overflow: 'hidden',
-                padding: 0,
-              }}
-              onClick={() => navigate(module.path)}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 12px 40px rgba(0,0,0,0.12)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-                (e.currentTarget as HTMLElement).style.boxShadow = '';
-              }}
-            >
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: '16px',
+      }}>
+        {moduleCards.map((module) => (
+          <div
+            key={module.title}
+            onClick={() => navigate(module.path)}
+            style={{
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              backgroundColor: 'white',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 12px 40px rgba(0,0,0,0.15)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+            }}
+          >
+            <div style={{
+              padding: '20px',
+              background: module.iconBg,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '16px',
+            }}>
               <div style={{
-                padding: '20px',
-                background: module.iconBg,
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                background: 'rgba(255,255,255,0.2)',
                 display: 'flex',
-                alignItems: 'flex-start',
-                gap: '16px',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '24px',
               }}>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  background: 'rgba(255,255,255,0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                }}>
-                  {module.icon}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'white' }}>
-                    {module.title}
-                  </h3>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', opacity: 0.9 }}>
-                    {module.description}
-                  </p>
-                </div>
+                {module.icon}
               </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'white' }}>
+                  {module.title}
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '12px', opacity: 0.9 }}>
+                  {module.description}
+                </p>
+              </div>
+            </div>
+            {module.stats && (
               <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                   {module.stats}
@@ -183,89 +178,21 @@ function Dashboard() {
                   访问 →
                 </span>
               </div>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Stats Row */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '16px',
-        marginBottom: '24px',
-      }}>
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '12px',
-              background: 'rgba(59, 130, 246, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-            }}>
-              👥
-            </div>
-            <div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--primary-500)' }}>
-                {stats.users}
+            )}
+            {!module.stats && (
+              <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: module.color }}>
+                  访问 →
+                </span>
               </div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>用户</div>
-            </div>
+            )}
           </div>
-        </Card>
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '12px',
-              background: 'rgba(82, 196, 26, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-            }}>
-              🔑
-            </div>
-            <div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--success)' }}>
-                {stats.roles}
-              </div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>角色</div>
-            </div>
-          </div>
-        </Card>
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '12px',
-              background: 'rgba(114, 46, 209, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-            }}>
-              📋
-            </div>
-            <div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: '#722ed1' }}>
-                {stats.permissions}
-              </div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>权限</div>
-            </div>
-          </div>
-        </Card>
+        ))}
       </div>
 
       {/* User Roles */}
       {user?.roles && user.roles.length > 0 && (
-        <Card>
+        <Card style={{ marginTop: '24px' }}>
           <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: 600 }}>我的角色</h3>
           <div className="tag-list">
             {user.roles.map((role) => (
