@@ -17,14 +17,12 @@ const menuItems: MenuItem[] = [
     icon: '📊',
   },
   {
-    label: 'AI 学习',
-    path: '/ai-learning',
+    label: 'AI-Learing',
     icon: '🤖',
-  },
-  {
-    label: '定时任务',
-    path: '/scheduled-tasks',
-    icon: '⏰',
+    children: [
+      { label: '学习任务', path: '/ai-learning' },
+      { label: '定时任务', path: '/scheduled-tasks' },
+    ],
   },
   {
     label: 'Notes',

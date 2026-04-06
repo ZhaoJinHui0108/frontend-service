@@ -89,7 +89,7 @@ const AILearning: React.FC = () => {
   const renderTasksView = () => (
     <div className="ai-learning-tasks">
       <div className="page-header">
-        <h1>🤖 AI 学习模块</h1>
+        <h1>🤖 AI-Learing</h1>
         <p className="page-subtitle">选择一个任务类型开始学习</p>
       </div>
 

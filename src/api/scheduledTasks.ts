@@ -1,6 +1,6 @@
 import axios from 'axios';
 import type {
-  ScheduledTaskResponse,
+  ScheduledTask,
   ScheduledTaskCreate,
   ScheduledTaskUpdate,
   TaskExecutionHistory,
@@ -26,19 +26,19 @@ api.interceptors.request.use((config) => {
 export const scheduledTasksApi = {
   // 任务列表
   listTasks: (params?: { skip?: number; limit?: number; enabled_only?: boolean }) =>
-    api.get<ScheduledTaskResponse[]>('/tasks', { params }),
+    api.get<ScheduledTask[]>('/tasks', { params }),
 
   // 获取单个任务
   getTask: (taskId: number) =>
-    api.get<ScheduledTaskResponse>(`/tasks/${taskId}`),
+    api.get<ScheduledTask>(`/tasks/${taskId}`),
 
   // 创建任务
   createTask: (data: ScheduledTaskCreate) =>
-    api.post<ScheduledTaskResponse>('/tasks', data),
+    api.post<ScheduledTask>('/tasks', data),
 
   // 更新任务
   updateTask: (taskId: number, data: ScheduledTaskUpdate) =>
-    api.put<ScheduledTaskResponse>(`/tasks/${taskId}`, data),
+    api.put<ScheduledTask>(`/tasks/${taskId}`, data),
 
   // 删除任务
   deleteTask: (taskId: number) =>

@@ -67,13 +67,18 @@ export interface TrainingMetrics {
 export interface TrainingJobResponse {
   job_id: string;
   task_id: string;
+  task_name: string;
   model_id: string;
+  model_name: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
+  model_params: Record<string, any>;
+  training_config: TrainingConfig;
+  metrics?: TrainingMetrics;
+  training_time?: number;
   created_at: string;
   started_at?: string;
   completed_at?: string;
-  progress: number;
-  metrics?: TrainingMetrics;
+  error?: string;
 }
 
 export interface ModelComparisonItem {

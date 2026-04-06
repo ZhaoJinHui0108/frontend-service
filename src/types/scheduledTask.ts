@@ -60,6 +60,7 @@ export interface TaskExecutionHistory {
   started_at: string;
   completed_at?: string;
   ai_job_id?: string;
+  ai_job_status?: string;
   result?: Record<string, any>;
   error?: string;
 }
