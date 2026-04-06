@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import ChatSidebar from './ChatSidebar';
 import { authApi } from '../api';
 
@@ -37,12 +37,8 @@ const menuItems: MenuItem[] = [
   },
   {
     label: 'Notes',
+    path: '/notes',
     icon: '📝',
-    children: [
-      { label: 'AI', path: '/notes?category=AI' },
-      { label: 'docker', path: '/notes?category=docker' },
-      { label: 'gateway', path: '/notes?category=gateway' },
-    ],
   },
   {
     label: 'Users',
@@ -65,12 +61,6 @@ const menuItems: MenuItem[] = [
 
 function MenuGroup({ item, isOpen, onToggle }: { item: MenuItem; isOpen: boolean; onToggle: () => void }) {
   const hasChildren = item.children && item.children.length > 0;
-  const location = useLocation();
-
-  // Check if a child path is active by comparing full location
-  const isChildActive = (childPath: string) => {
-    return location.pathname + location.search === childPath;
-  };
 
   if (hasChildren) {
     return (
@@ -89,7 +79,9 @@ function MenuGroup({ item, isOpen, onToggle }: { item: MenuItem; isOpen: boolean
               <NavLink
                 key={child.path}
                 to={child.path!}
-                className={isChildActive(child.path!) ? 'menu-child active' : 'menu-child'}
+                className={({ isActive }) =>
+                  `menu-child ${isActive ? 'active' : ''}`
+                }
               >
                 {child.label}
               </NavLink>

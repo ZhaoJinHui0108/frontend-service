@@ -201,19 +201,18 @@ body {
   color: var(--text-secondary);
   text-decoration: none;
   font-size: 13px;
-  transition: 'background-color 0.15s, color 0.15s';
-  margin-bottom: 2px;
+  transition: all 0.2s ease;
 }
 
 .menu-child:hover {
-  background-color: rgba(0, 0, 0, 0.03);
-  color: var(--text-primary);
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-heading);
 }
 
 .menu-child.active {
-  background-color: rgba(59, 130, 246, 0.12);
+  background-color: rgba(59, 130, 246, 0.1);
   color: var(--primary-500);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* Main Content Area */
