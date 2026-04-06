@@ -63,9 +63,26 @@ function MenuGroup({ item, isOpen, onToggle }: { item: MenuItem; isOpen: boolean
   const hasChildren = item.children && item.children.length > 0;
   const location = useLocation();
 
-  // Exact match for child paths
+  // Robust path matching with proper URL decoding
   const isChildActive = (childPath: string) => {
-    return location.pathname + location.search === childPath;
+    // Decode both paths to handle URL encoding differences
+    const decodePath = (path: string) => decodeURIComponent(path);
+    const currentPath = decodePath(location.pathname + location.search);
+    const targetPath = decodePath(childPath);
+    
+    // Handle both /path and /path?query formats
+    const [targetBase, targetQuery] = targetPath.split('?');
+    const [currentBase, currentQuery] = currentPath.split('?');
+    
+    // Base paths must match
+    if (targetBase !== currentBase) return false;
+    
+    // If target has query, current must have same query
+    if (targetQuery) {
+      return currentQuery === targetQuery;
+    }
+    
+    return true;
   };
 
   if (hasChildren) {
