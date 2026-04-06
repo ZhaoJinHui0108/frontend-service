@@ -1151,16 +1151,15 @@ tr:hover td {
   line-height: 1.10;
 }
 
-/* Notes Page Styles - Three Panel Layout */
+/* Notes Page Styles */
 .notes-layout {
   display: flex;
   height: calc(100vh - 64px);
   margin: calc(-1 * var(--space-xl));
 }
 
-/* Left Sidebar - Category List */
 .notes-sidebar {
-  width: 220px;
+  width: 280px;
   background: var(--bg-primary);
   border-right: 1px solid var(--border-light);
   display: flex;
@@ -1180,89 +1179,6 @@ tr:hover td {
   font-size: 16px;
   font-weight: 600;
   margin: 0;
-}
-
-/* Category List */
-.category-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--space-sm);
-}
-
-.category-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: 10px 12px;
-  border-radius: var(--radius-standard);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  margin-bottom: 4px;
-}
-
-.category-item:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.category-item.selected {
-  background-color: rgba(59, 130, 246, 0.12);
-  color: var(--primary-500);
-  font-weight: 600;
-}
-
-.category-icon {
-  font-size: 16px;
-  width: 24px;
-  text-align: center;
-}
-
-.category-name {
-  font-size: 14px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Middle Panel */
-.notes-middle-panel {
-  width: 280px;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border-light);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.middle-panel-header {
-  padding: var(--space-lg);
-  border-bottom: 1px solid var(--border-light);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--bg-primary);
-}
-
-.middle-panel-header h4 {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0;
-  color: var(--text-heading);
-}
-
-.middle-panel-tree {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--space-sm);
-  background: var(--bg-primary);
-}
-
-/* Main Content Area */
-.notes-main-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--bg-primary);
 }
 
 .sidebar-tree {

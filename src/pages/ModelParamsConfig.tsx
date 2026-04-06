@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { aiLearningApi } from '../api/aiLearning';
 import type { TaskInfo, ModelInfo, TrainingConfig } from '../types/aiLearning';
 import { Button, Card } from '../components/ui';
@@ -7,9 +7,15 @@ interface Props {
   task: TaskInfo;
   model: ModelInfo;
   onTrainingComplete: () => void;
+  hideActions?: boolean;
+  onStartTraining?: () => void;
 }
 
-const ModelParamsConfig: React.FC<Props> = ({ task, model, onTrainingComplete }) => {
+export interface ModelParamsConfigRef {
+  startTraining: () => void;
+}
+
+const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model, onTrainingComplete, hideActions, onStartTraining }, _ref) => {
   const [modelParams, setModelParams] = useState<Record<string, any>>(() => {
     const defaults: Record<string, any> = {};
     model.params.forEach((param) => {
@@ -83,6 +89,19 @@ const ModelParamsConfig: React.FC<Props> = ({ task, model, onTrainingComplete })
       clearInterval(pollInterval);
       setPollInterval(null);
     }
+  };
+
+  // Expose startTraining for parent component
+  useImperativeHandle(_ref, () => ({
+    startTraining,
+  }), [startTraining]);
+
+  // Call onStartTraining callback when button is clicked (for external triggering)
+  const handleStartTrainingClick = () => {
+    if (onStartTraining) {
+      onStartTraining();
+    }
+    startTraining();
   };
 
   // Tooltip with auto-close after 3 seconds
@@ -439,27 +458,29 @@ const ModelParamsConfig: React.FC<Props> = ({ task, model, onTrainingComplete })
       )}
 
       {/* 操作按钮 */}
-      <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-        {!trainingJob || trainingJob.status === 'completed' || trainingJob.status === 'failed' ? (
-          <Button
-            onClick={startTraining}
-            disabled={loading}
-            style={{ padding: '12px 24px', fontSize: '14px', fontWeight: 500 }}
-          >
-            {loading ? '启动中...' : '🚀 开始训练'}
-          </Button>
-        ) : (
-          <Button
-            variant="secondary"
-            onClick={stopTraining}
-            style={{ padding: '12px 24px', fontSize: '14px', fontWeight: 500 }}
-          >
-            停止训练
-          </Button>
-        )}
-      </div>
+      {!hideActions && (
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+          {!trainingJob || trainingJob.status === 'completed' || trainingJob.status === 'failed' ? (
+            <Button
+              onClick={handleStartTrainingClick}
+              disabled={loading}
+              style={{ padding: '12px 24px', fontSize: '14px', fontWeight: 500 }}
+            >
+              {loading ? '启动中...' : '🚀 开始训练'}
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              onClick={stopTraining}
+              style={{ padding: '12px 24px', fontSize: '14px', fontWeight: 500 }}
+            >
+              停止训练
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
-};
+});
 
 export default ModelParamsConfig;

@@ -37,8 +37,12 @@ const menuItems: MenuItem[] = [
   },
   {
     label: 'Notes',
-    path: '/notes',
     icon: '📝',
+    children: [
+      { label: 'AI', path: '/notes?category=AI' },
+      { label: 'docker', path: '/notes?category=docker' },
+      { label: 'gateway', path: '/notes?category=gateway' },
+    ],
   },
   {
     label: 'Users',
@@ -61,7 +65,12 @@ const menuItems: MenuItem[] = [
 
 function MenuGroup({ item, isOpen, onToggle }: { item: MenuItem; isOpen: boolean; onToggle: () => void }) {
   const hasChildren = item.children && item.children.length > 0;
-  const location = useNavigate();
+  const location = useLocation();
+
+  // Check if a child path is active by comparing full location
+  const isChildActive = (childPath: string) => {
+    return location.pathname + location.search === childPath;
+  };
 
   if (hasChildren) {
     return (
@@ -80,9 +89,7 @@ function MenuGroup({ item, isOpen, onToggle }: { item: MenuItem; isOpen: boolean
               <NavLink
                 key={child.path}
                 to={child.path!}
-                className={({ isActive }) =>
-                  `menu-child ${isActive ? 'active' : ''}`
-                }
+                className={isChildActive(child.path!) ? 'menu-child active' : 'menu-child'}
               >
                 {child.label}
               </NavLink>
@@ -107,7 +114,6 @@ function MenuGroup({ item, isOpen, onToggle }: { item: MenuItem; isOpen: boolean
 
 function Layout() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [userInfo, setUserInfo] = useState<{ username: string; email?: string } | null>(null);

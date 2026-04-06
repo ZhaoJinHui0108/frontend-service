@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { aiLearningApi } from '../api/aiLearning';
 import type { TaskInfo, ModelInfo, TrainingJobResponse, TaskType } from '../types/aiLearning';
 import { TaskTypeLabels, TaskTypeIcons } from '../types/aiLearning';
 import { Button, Card, Badge } from '../components/ui';
-import ModelParamsConfig from './ModelParamsConfig';
+import ModelParamsConfig, { ModelParamsConfigRef } from './ModelParamsConfig';
 import TrainingResults from './TrainingResults';
 
 type ViewMode = 'tasks' | 'models' | 'config' | 'training' | 'results';
@@ -23,6 +23,7 @@ const AILearning: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<TaskType | 'all'>(
     (searchParams.get('type') as TaskType) || 'all'
   );
+  const configRef = useRef<ModelParamsConfigRef>(null);
 
   useEffect(() => {
     loadTasks();
@@ -271,17 +272,24 @@ const AILearning: React.FC = () => {
 
   const renderConfigView = () => (
     <div className="page-content">
-      <div className="page-header">
-        <Button variant="ghost" onClick={() => setViewMode('models')} style={{ marginBottom: '8px', padding: '4px 0' }}>
-          ← 返回模型列表
+      <div className="page-header flex-between">
+        <div>
+          <Button variant="ghost" onClick={() => setViewMode('models')} style={{ marginBottom: '8px', padding: '4px 0' }}>
+            ← 返回模型列表
+          </Button>
+          <h1 style={{ margin: 0 }}>{selectedTask?.name} - {selectedModel?.name}</h1>
+        </div>
+        <Button variant="primary" onClick={() => configRef.current?.startTraining()}>
+          🚀 开始训练
         </Button>
-        <h1 style={{ margin: 0 }}>{selectedTask?.name} - {selectedModel?.name}</h1>
       </div>
 
       <ModelParamsConfig
+        ref={configRef}
         task={selectedTask!}
         model={selectedModel!}
         onTrainingComplete={handleTrainingComplete}
+        hideActions={true}
       />
     </div>
   );
