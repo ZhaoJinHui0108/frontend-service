@@ -18,6 +18,7 @@ const TaskFormModal: React.FC<Props> = ({ task, onClose, onSuccess }) => {
   const [presets, setPresets] = useState<SchedulePreset[]>([]);
   const [cronNextRuns, setCronNextRuns] = useState<string[]>([]);
   const [activeSection, setActiveSection] = useState<'basic' | 'schedule' | 'ai' | 'params'>('basic');
+  const [submitError, setSubmitError] = useState<string>('');
 
   const [formData, setFormData] = useState<Partial<ScheduledTaskCreate>>({
     name: '',
@@ -146,6 +147,7 @@ const TaskFormModal: React.FC<Props> = ({ task, onClose, onSuccess }) => {
     }
 
     setLoading(true);
+    setSubmitError('');
     try {
       const payload: ScheduledTaskCreate | ScheduledTaskUpdate = {
         ...formData,
@@ -160,7 +162,7 @@ const TaskFormModal: React.FC<Props> = ({ task, onClose, onSuccess }) => {
       }
       onSuccess();
     } catch (err: any) {
-      alert(err.response?.data?.detail || '保存失败');
+      setSubmitError(err.message || '保存失败，请检查参数是否在有效范围内');
     } finally {
       setLoading(false);
     }
@@ -425,6 +427,19 @@ const TaskFormModal: React.FC<Props> = ({ task, onClose, onSuccess }) => {
         {/* Body */}
         <form onSubmit={handleSubmit} style={{ maxHeight: 'calc(90vh - 140px)', overflow: 'auto' }}>
           <div style={{ padding: '24px' }}>
+            {submitError && (
+              <div style={{
+                backgroundColor: 'var(--error-bg)',
+                color: 'var(--error)',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                fontSize: '14px',
+                border: '1px solid var(--error)',
+              }}>
+                {submitError}
+              </div>
+            )}
             <SectionNav active={activeSection} setActive={setActiveSection} />
 
             {activeSection === 'basic' && (

@@ -25,6 +25,9 @@ const AILearning: React.FC = () => {
   );
   const configRef = useRef<ModelParamsConfigRef>(null);
   
+  // Lifted training job state to persist across view changes
+  const [currentTrainingJob, setCurrentTrainingJob] = useState<TrainingJobResponse | null>(null);
+  
   // Training records search/filter state
   const [jobSearch, setJobSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -111,8 +114,13 @@ const AILearning: React.FC = () => {
   };
 
   const handleTrainingComplete = () => {
+    setCurrentTrainingJob(null);
     loadJobs();
     setViewMode('training');
+  };
+  
+  const handleTrainingJobUpdate = (job: TrainingJobResponse | null) => {
+    setCurrentTrainingJob(job);
   };
 
   const handleCompare = () => {
@@ -316,6 +324,8 @@ const AILearning: React.FC = () => {
         task={selectedTask!}
         model={selectedModel!}
         onTrainingComplete={handleTrainingComplete}
+        onTrainingJobUpdate={handleTrainingJobUpdate}
+        initialTrainingJob={currentTrainingJob}
         hideActions={true}
         showStatusHeader={true}
       />

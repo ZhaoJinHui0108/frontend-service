@@ -10,13 +10,15 @@ interface Props {
   hideActions?: boolean;
   onStartTraining?: () => void;
   showStatusHeader?: boolean;
+  initialTrainingJob?: any | null;
+  onTrainingJobUpdate?: (job: any | null) => void;
 }
 
 export interface ModelParamsConfigRef {
   startTraining: () => void;
 }
 
-const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model, onTrainingComplete, hideActions, onStartTraining, showStatusHeader }, _ref) => {
+const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model, onTrainingComplete, hideActions, onStartTraining, showStatusHeader, initialTrainingJob, onTrainingJobUpdate }, _ref) => {
   const [modelParams, setModelParams] = useState<Record<string, any>>(() => {
     const defaults: Record<string, any> = {};
     model.params.forEach((param) => {
@@ -37,6 +39,13 @@ const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model
   const [error, setError] = useState('');
   const [trainingJob, setTrainingJob] = useState<any>(null);
   const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
+  
+  // Initialize with lifted state if available
+  useEffect(() => {
+    if (initialTrainingJob) {
+      setTrainingJob(initialTrainingJob);
+    }
+  }, [initialTrainingJob]);
 
   const handleParamChange = (paramName: string, value: any) => {
     setModelParams((prev) => ({ ...prev, [paramName]: value }));
@@ -59,11 +68,17 @@ const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model
       });
 
       setTrainingJob(data);
+      if (onTrainingJobUpdate) {
+        onTrainingJobUpdate(data);
+      }
 
       const interval = setInterval(async () => {
         try {
           const { data: jobData } = await aiLearningApi.getJob(data.job_id);
           setTrainingJob(jobData);
+          if (onTrainingJobUpdate) {
+            onTrainingJobUpdate(jobData);
+          }
 
           if (jobData.status === 'completed' || jobData.status === 'failed') {
             clearInterval(interval);
