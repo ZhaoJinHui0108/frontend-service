@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { aiLearningApi } from '../api/aiLearning';
 import type { TaskInfo, ModelInfo, TrainingJobResponse, TaskType } from '../types/aiLearning';
 import { TaskTypeLabels, TaskTypeIcons } from '../types/aiLearning';
@@ -9,19 +10,32 @@ import TrainingResults from './TrainingResults';
 type ViewMode = 'tasks' | 'models' | 'config' | 'training' | 'results';
 
 const AILearning: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<ViewMode>('tasks');
   const [tasks, setTasks] = useState<TaskInfo[]>([]);
+  const [filteredTasks, setFilteredTasks] = useState<TaskInfo[]>([]);
   const [selectedTask, setSelectedTask] = useState<TaskInfo | null>(null);
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
   const [jobs, setJobs] = useState<TrainingJobResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [activeFilter, setActiveFilter] = useState<TaskType | 'all'>(
+    (searchParams.get('type') as TaskType) || 'all'
+  );
 
   useEffect(() => {
     loadTasks();
     loadJobs();
   }, []);
+
+  useEffect(() => {
+    if (activeFilter === 'all') {
+      setFilteredTasks(tasks);
+    } else {
+      setFilteredTasks(tasks.filter(t => t.task_type === activeFilter));
+    }
+  }, [tasks, activeFilter]);
 
   const loadTasks = async () => {
     try {
@@ -77,6 +91,15 @@ const AILearning: React.FC = () => {
     setViewMode('results');
   };
 
+  const handleFilterChange = (type: TaskType | 'all') => {
+    setActiveFilter(type);
+    if (type !== 'all') {
+      setSearchParams({ type });
+    } else {
+      setSearchParams({});
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {
       pending: 'warning',
@@ -108,15 +131,55 @@ const AILearning: React.FC = () => {
         </div>
       )}
 
+      {/* Task Type Filter */}
+      <div className="filter-tabs" style={{ marginBottom: '24px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <Button
+          variant={activeFilter === 'all' ? 'primary' : 'secondary'}
+          size="small"
+          onClick={() => handleFilterChange('all')}
+        >
+          全部
+        </Button>
+        {(Object.keys(TaskTypeLabels) as TaskType[]).map(type => (
+          <Button
+            key={type}
+            variant={activeFilter === type ? 'primary' : 'secondary'}
+            size="small"
+            onClick={() => handleFilterChange(type)}
+          >
+            {TaskTypeIcons[type]} {TaskTypeLabels[type]}
+          </Button>
+        ))}
+      </div>
+
       <div className="card-grid">
-        {tasks.map((task) => (
-          <Card key={task.id} style={{ cursor: 'pointer' }} onClick={() => handleTaskSelect(task)}>
+        {filteredTasks.map((task) => (
+          <Card
+            key={task.id}
+            style={{
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              border: '2px solid transparent',
+            }}
+            onClick={() => handleTaskSelect(task)}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--primary-500)';
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.15)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'transparent';
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+              (e.currentTarget as HTMLElement).style.boxShadow = '';
+            }}
+          >
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               <div style={{ flex: 1 }}>
                 <div className="flex-between" style={{ marginBottom: '12px' }}>
                   <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>
                     {TaskTypeIcons[task.task_type]} {task.name}
                   </h3>
+                  <Badge variant="muted">{TaskTypeLabels[task.task_type]}</Badge>
                 </div>
                 <p className="text-secondary" style={{ fontSize: '14px', marginBottom: '12px' }}>
                   {task.description}
@@ -137,7 +200,7 @@ const AILearning: React.FC = () => {
         ))}
       </div>
 
-      {tasks.length === 0 && !loading && (
+      {filteredTasks.length === 0 && !loading && (
         <Card>
           <div className="empty-state">
             <p>暂无任务</p>
@@ -161,7 +224,25 @@ const AILearning: React.FC = () => {
 
       <div className="card-grid">
         {models.map((model) => (
-          <Card key={model.id} style={{ cursor: 'pointer' }} onClick={() => handleModelSelect(model)}>
+          <Card
+            key={model.id}
+            style={{
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              border: '2px solid transparent',
+            }}
+            onClick={() => handleModelSelect(model)}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--primary-500)';
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.15)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'transparent';
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+              (e.currentTarget as HTMLElement).style.boxShadow = '';
+            }}
+          >
             <div className="flex-between" style={{ marginBottom: '12px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>{model.name}</h3>
               <Badge variant={model.framework === 'sklearn' ? 'success' : 'primary'}>

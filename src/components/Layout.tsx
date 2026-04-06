@@ -20,9 +20,20 @@ const menuItems: MenuItem[] = [
     label: 'AI-Learing',
     icon: '🤖',
     children: [
-      { label: '学习任务', path: '/ai-learning' },
-      { label: '定时任务', path: '/scheduled-tasks' },
+      { label: '分类 (Classification)', path: '/ai-learning?type=classification' },
+      { label: '回归 (Regression)', path: '/ai-learning?type=regression' },
+      { label: '聚类 (Clustering)', path: '/ai-learning?type=clustering' },
+      { label: '目标检测', path: '/ai-learning?type=object_detection' },
+      { label: '语义分割', path: '/ai-learning?type=semantic_segmentation' },
+      { label: '序列生成', path: '/ai-learning?type=sequence_generation' },
+      { label: '问答系统', path: '/ai-learning?type=question_answering' },
+      { label: '推荐系统', path: '/ai-learning?type=recommendation' },
     ],
+  },
+  {
+    label: 'Scheduled Tasks',
+    path: '/scheduled-tasks',
+    icon: '⏰',
   },
   {
     label: 'Notes',

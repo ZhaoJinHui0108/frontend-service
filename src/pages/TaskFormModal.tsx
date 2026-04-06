@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Input } from '../components/ui';
+import React, { useState, useEffect, useRef } from 'react';
+import { Button, Input, Card } from '../components/ui';
 import { scheduledTasksApi } from '../api/scheduledTasks';
 import type { ScheduledTask, ScheduledTaskCreate, ScheduledTaskUpdate, AITask, AIModel, SchedulePreset, ScheduleType } from '../types/scheduledTask';
 import { ScheduleTypeLabels } from '../types/scheduledTask';
@@ -17,6 +17,7 @@ const TaskFormModal: React.FC<Props> = ({ task, onClose, onSuccess }) => {
   const [models, setModels] = useState<AIModel[]>([]);
   const [presets, setPresets] = useState<SchedulePreset[]>([]);
   const [cronNextRuns, setCronNextRuns] = useState<string[]>([]);
+  const [activeSection, setActiveSection] = useState<'basic' | 'schedule' | 'ai' | 'params'>('basic');
 
   const [formData, setFormData] = useState<Partial<ScheduledTaskCreate>>({
     name: '',
@@ -60,12 +61,6 @@ const TaskFormModal: React.FC<Props> = ({ task, onClose, onSuccess }) => {
       });
       setModelParams(task.ai_model_params || {});
       setTrainingConfig(task.ai_training_config || {});
-      // 加载任务和模型
-      const t = aiTasks.find(t => t.id === task.ai_task_id);
-      if (t) {
-        setSelectedTask(t);
-        loadModels(t.id);
-      }
     }
   }, [task]);
 
@@ -91,10 +86,8 @@ const TaskFormModal: React.FC<Props> = ({ task, onClose, onSuccess }) => {
     try {
       const { data } = await scheduledTasksApi.getAITaskModels(taskId);
       setModels(data.models);
-      // 自动选择第一个模型
       if (data.models.length > 0 && !formData.ai_model_id) {
         setFormData(prev => ({ ...prev, ai_task_id: taskId, ai_model_id: data.models[0].id }));
-        // 设置默认模型参数
         const defaultParams: Record<string, any> = {};
         data.models[0].params.forEach(p => {
           defaultParams[p.param_name] = p.default;
@@ -173,6 +166,68 @@ const TaskFormModal: React.FC<Props> = ({ task, onClose, onSuccess }) => {
     }
   };
 
+  const ParamHelpTooltip = ({ text }: { text: string }) => {
+    const [show, setShow] = useState(false);
+    return (
+      <span style={{ position: 'relative', marginLeft: '4px', display: 'inline-flex', alignItems: 'center' }}>
+        <button
+          type="button"
+          onClick={() => setShow(!show)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '14px',
+            color: 'var(--text-muted)',
+            padding: '2px 6px',
+            borderRadius: '50%',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+            e.currentTarget.style.color = 'var(--primary-500)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = 'var(--text-muted)';
+          }}
+        >
+          ?
+        </button>
+        {show && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '100%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: 'var(--text-heading)',
+              color: 'white',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              fontSize: '12px',
+              width: '200px',
+              zIndex: 100,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              marginBottom: '8px',
+              lineHeight: 1.4,
+            }}
+          >
+            {text}
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              border: '6px solid transparent',
+              borderTopColor: 'var(--text-heading)',
+            }} />
+          </div>
+        )}
+      </span>
+    );
+  };
+
   const renderParamInput = (param: AIModel['params'][0]) => {
     const value = modelParams[param.param_name];
     
@@ -180,252 +235,525 @@ const TaskFormModal: React.FC<Props> = ({ task, onClose, onSuccess }) => {
       case 'int':
       case 'float':
         return (
-          <div key={param.param_name} className="param-item">
-            <label>{param.param_name}</label>
+          <div key={param.param_name} style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontWeight: 500, fontSize: '14px', color: 'var(--text-heading)' }}>
+                {param.param_name}
+              </label>
+              <ParamHelpTooltip text={param.description} />
+            </div>
             <input
               type="number"
               min={param.min_value}
               max={param.max_value}
               step={param.step || 1}
-              value={value}
+              value={value ?? param.default}
               onChange={(e) => setModelParams(prev => ({ ...prev, [param.param_name]: parseFloat(e.target.value) }))}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                border: '1px solid var(--border-default)',
+                borderRadius: '8px',
+                fontSize: '14px',
+                transition: 'border-color 0.2s',
+              }}
+              onFocus={(e) => e.target.style.borderColor = 'var(--primary-500)'}
+              onBlur={(e) => e.target.style.borderColor = 'var(--border-default)'}
             />
-            <span className="param-desc">{param.description}</span>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              范围: {param.min_value} ~ {param.max_value}
+            </div>
           </div>
         );
       case 'bool':
         return (
-          <div key={param.param_name} className="param-item">
-            <label>
-              <input
-                type="checkbox"
-                checked={value}
-                onChange={(e) => setModelParams(prev => ({ ...prev, [param.param_name]: e.target.checked }))}
-              />
+          <div key={param.param_name} style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input
+              type="checkbox"
+              id={`param-${param.param_name}`}
+              checked={value ?? param.default}
+              onChange={(e) => setModelParams(prev => ({ ...prev, [param.param_name]: e.target.checked }))}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <label htmlFor={`param-${param.param_name}`} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
               {param.param_name}
+              <ParamHelpTooltip text={param.description} />
             </label>
-            <span className="param-desc">{param.description}</span>
           </div>
         );
       case 'choice':
         return (
-          <div key={param.param_name} className="param-item">
-            <label>{param.param_name}</label>
+          <div key={param.param_name} style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontWeight: 500, fontSize: '14px', color: 'var(--text-heading)' }}>
+                {param.param_name}
+              </label>
+              <ParamHelpTooltip text={param.description} />
+            </div>
             <select
-              value={value}
+              value={value ?? param.default}
               onChange={(e) => setModelParams(prev => ({ ...prev, [param.param_name]: e.target.value }))}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                border: '1px solid var(--border-default)',
+                borderRadius: '8px',
+                fontSize: '14px',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+              }}
             >
               {param.choices?.map(c => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
-            <span className="param-desc">{param.description}</span>
           </div>
         );
       default:
         return (
-          <div key={param.param_name} className="param-item">
-            <label>{param.param_name}</label>
+          <div key={param.param_name} style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontWeight: 500, fontSize: '14px', color: 'var(--text-heading)' }}>
+                {param.param_name}
+              </label>
+              <ParamHelpTooltip text={param.description} />
+            </div>
             <input
               type="text"
-              value={value}
+              value={value ?? param.default}
               onChange={(e) => setModelParams(prev => ({ ...prev, [param.param_name]: e.target.value }))}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                border: '1px solid var(--border-default)',
+                borderRadius: '8px',
+                fontSize: '14px',
+              }}
             />
-            <span className="param-desc">{param.description}</span>
           </div>
         );
     }
   };
 
+  const SectionNav = ({ active, setActive }: { active: string; setActive: (s: any) => void }) => (
+    <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', borderBottom: '1px solid var(--border-light)', paddingBottom: '12px' }}>
+      {(['basic', 'schedule', 'ai', 'params'] as const).map(section => (
+        <button
+          key={section}
+          type="button"
+          onClick={() => setActive(section)}
+          style={{
+            padding: '8px 16px',
+            border: 'none',
+            background: active === section ? 'var(--primary-500)' : 'transparent',
+            color: active === section ? 'white' : 'var(--text-secondary)',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 500,
+            fontSize: '14px',
+            transition: 'all 0.2s',
+          }}
+        >
+          {section === 'basic' && '基本信息'}
+          {section === 'schedule' && '调度配置'}
+          {section === 'ai' && 'AI 任务'}
+          {section === 'params' && '参数配置'}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{task ? '编辑定时任务' : '新建定时任务'}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+    }} onClick={onClose}>
+      <div
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          width: '90%',
+          maxWidth: '600px',
+          maxHeight: '90vh',
+          overflow: 'hidden',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{
+          padding: '20px 24px',
+          borderBottom: '1px solid var(--border-light)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: 'var(--bg-primary)',
+        }}>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>
+            {task ? '编辑定时任务' : '新建定时任务'}
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '24px',
+              cursor: 'pointer',
+              color: 'var(--text-muted)',
+              padding: '0',
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            {/* 基本信息 */}
-            <div className="form-section">
-              <h3>基本信息</h3>
-              <div className="form-row">
-                <Input
-                  label="任务名称"
-                  value={formData.name || ''}
-                  onChange={(v) => setFormData(prev => ({ ...prev, name: v }))}
-                  required
-                />
-              </div>
-              <div className="form-row">
-                <Input
-                  label="任务描述"
-                  value={formData.description || ''}
-                  onChange={(v) => setFormData(prev => ({ ...prev, description: v }))}
-                />
-              </div>
-            </div>
 
-            {/* 调度配置 */}
-            <div className="form-section">
-              <h3>调度配置</h3>
-              <div className="form-row">
-                <label>调度类型</label>
-                <select
-                  value={formData.schedule_type}
-                  onChange={(e) => setFormData(prev => ({ ...prev, schedule_type: e.target.value as ScheduleType }))}
-                >
-                  {Object.entries(ScheduleTypeLabels).map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
-                  ))}
-                </select>
-              </div>
+        {/* Body */}
+        <form onSubmit={handleSubmit} style={{ maxHeight: 'calc(90vh - 140px)', overflow: 'auto' }}>
+          <div style={{ padding: '24px' }}>
+            <SectionNav active={activeSection} setActive={setActiveSection} />
 
-              {formData.schedule_type === 'once' && (
-                <div className="form-row">
-                  <label>执行时间</label>
+            {activeSection === 'basic' && (
+              <div>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontWeight: 500, fontSize: '14px', marginBottom: '6px', color: 'var(--text-heading)' }}>
+                    任务名称 *
+                  </label>
                   <input
-                    type="datetime-local"
-                    value={formData.execute_at?.slice(0, 16) || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, execute_at: e.target.value }))}
+                    type="text"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      border: '1px solid var(--border-default)',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                    }}
+                    placeholder="例如：每日 MNIST 训练"
                   />
                 </div>
-              )}
-
-              {formData.schedule_type === 'cron' && (
-                <>
-                  <div className="form-row">
-                    <label>Cron 表达式</label>
-                    <input
-                      type="text"
-                      value={formData.cron_expression || ''}
-                      onChange={(e) => handleCronExpressionChange(e.target.value)}
-                      placeholder="0 * * * *"
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>预设</label>
-                    <select onChange={(e) => handleCronExpressionChange(e.target.value)}>
-                      <option value="">选择预设...</option>
-                      {presets.map(p => (
-                        <option key={p.expression} value={p.expression}>
-                          {p.name} - {p.description}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {cronNextRuns.length > 0 && (
-                    <div className="cron-preview">
-                      <label>下次执行时间：</label>
-                      <ul>
-                        {cronNextRuns.map((t, i) => (
-                          <li key={i}>{new Date(t).toLocaleString('zh-CN')}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {formData.schedule_type === 'interval' && (
-                <div className="form-row">
-                  <label>间隔（秒）</label>
-                  <input
-                    type="number"
-                    min={60}
-                    value={formData.interval_seconds || 3600}
-                    onChange={(e) => setFormData(prev => ({ ...prev, interval_seconds: parseInt(e.target.value) }))}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontWeight: 500, fontSize: '14px', marginBottom: '6px', color: 'var(--text-heading)' }}>
+                    任务描述
+                  </label>
+                  <textarea
+                    value={formData.description || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      border: '1px solid var(--border-default)',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      resize: 'vertical',
+                    }}
+                    placeholder="描述这个定时任务的用途..."
                   />
                 </div>
-              )}
-            </div>
-
-            {/* AI 任务选择 */}
-            <div className="form-section">
-              <h3>AI 学习任务</h3>
-              <div className="form-row">
-                <label>选择任务</label>
-                <select
-                  value={formData.ai_task_id || ''}
-                  onChange={(e) => handleTaskChange(e.target.value)}
-                >
-                  <option value="">请选择任务...</option>
-                  {aiTasks.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {models.length > 0 && (
-                <div className="form-row">
-                  <label>选择模型</label>
-                  <select
-                    value={formData.ai_model_id || ''}
-                    onChange={(e) => handleModelChange(e.target.value)}
-                  >
-                    <option value="">请选择模型...</option>
-                    {models.map(m => (
-                      <option key={m.id} value={m.id}>{m.name} ({m.framework})</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {selectedTask && models.length > 0 && (
-                <div className="selected-task-info">
-                  <p>任务描述：{selectedTask.description}</p>
-                </div>
-              )}
-            </div>
-
-            {/* 模型参数 */}
-            {models.length > 0 && (
-              <div className="form-section">
-                <h3>模型参数配置</h3>
-                {models.find(m => m.id === formData.ai_model_id)?.params.map(renderParamInput)}
               </div>
             )}
 
-            {/* 训练配置 */}
-            <div className="form-section">
-              <h3>训练配置</h3>
-              <div className="form-row-group">
-                <div className="form-row">
-                  <label>Epochs</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={1000}
-                    value={trainingConfig.epochs}
-                    onChange={(e) => setTrainingConfig(prev => ({ ...prev, epochs: parseInt(e.target.value) }))}
-                  />
+            {activeSection === 'schedule' && (
+              <div>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontWeight: 500, fontSize: '14px', marginBottom: '6px', color: 'var(--text-heading)' }}>
+                    调度类型
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {(Object.entries(ScheduleTypeLabels) as [ScheduleType, string][]).map(([key, label]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, schedule_type: key }))}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          border: formData.schedule_type === key ? '2px solid var(--primary-500)' : '1px solid var(--border-default)',
+                          background: formData.schedule_type === key ? 'rgba(59, 130, 246, 0.05)' : 'white',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: formData.schedule_type === key ? 'var(--primary-500)' : 'var(--text-secondary)',
+                        }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="form-row">
-                  <label>Batch Size</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={512}
-                    value={trainingConfig.batch_size}
-                    onChange={(e) => setTrainingConfig(prev => ({ ...prev, batch_size: parseInt(e.target.value) }))}
-                  />
-                </div>
-                <div className="form-row">
-                  <label>Learning Rate</label>
-                  <input
-                    type="number"
-                    min={0.0001}
-                    max={1}
-                    step={0.001}
-                    value={trainingConfig.learning_rate}
-                    onChange={(e) => setTrainingConfig(prev => ({ ...prev, learning_rate: parseFloat(e.target.value) }))}
-                  />
-                </div>
+
+                {formData.schedule_type === 'cron' && (
+                  <>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontWeight: 500, fontSize: '14px', marginBottom: '6px', color: 'var(--text-heading)' }}>
+                        Cron 表达式
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.cron_expression || ''}
+                        onChange={(e) => handleCronExpressionChange(e.target.value)}
+                        placeholder="0 * * * *"
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          border: '1px solid var(--border-default)',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontFamily: 'monospace',
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontWeight: 500, fontSize: '14px', marginBottom: '6px', color: 'var(--text-heading)' }}>
+                        预设
+                      </label>
+                      <select
+                        onChange={(e) => handleCronExpressionChange(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          border: '1px solid var(--border-default)',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                        }}
+                      >
+                        <option value="">选择预设...</option>
+                        {presets.map(p => (
+                          <option key={p.expression} value={p.expression}>
+                            {p.name} - {p.description}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {cronNextRuns.length > 0 && (
+                      <Card style={{ backgroundColor: 'var(--bg-secondary)', padding: '12px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px' }}>下次执行时间：</div>
+                        <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                          {cronNextRuns.map((t, i) => (
+                            <li key={i}>{new Date(t).toLocaleString('zh-CN')}</li>
+                          ))}
+                        </ul>
+                      </Card>
+                    )}
+                  </>
+                )}
+
+                {formData.schedule_type === 'interval' && (
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 500, fontSize: '14px', marginBottom: '6px', color: 'var(--text-heading)' }}>
+                      间隔（秒）
+                    </label>
+                    <input
+                      type="number"
+                      min={60}
+                      value={formData.interval_seconds || 3600}
+                      onChange={(e) => setFormData(prev => ({ ...prev, interval_seconds: parseInt(e.target.value) }))}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        border: '1px solid var(--border-default)',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                      }}
+                    />
+                  </div>
+                )}
+
+                {formData.schedule_type === 'once' && (
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 500, fontSize: '14px', marginBottom: '6px', color: 'var(--text-heading)' }}>
+                      执行时间
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formData.execute_at?.slice(0, 16) || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, execute_at: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        border: '1px solid var(--border-default)',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                      }}
+                    />
+                  </div>
+                )}
               </div>
-            </div>
+            )}
+
+            {activeSection === 'ai' && (
+              <div>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontWeight: 500, fontSize: '14px', marginBottom: '6px', color: 'var(--text-heading)' }}>
+                    选择 AI 学习任务 *
+                  </label>
+                  <select
+                    value={formData.ai_task_id || ''}
+                    onChange={(e) => handleTaskChange(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      border: '1px solid var(--border-default)',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                    }}
+                  >
+                    <option value="">请选择任务...</option>
+                    {aiTasks.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedTask && (
+                  <Card style={{ backgroundColor: 'var(--bg-secondary)', padding: '12px', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      {selectedTask.description}
+                    </div>
+                  </Card>
+                )}
+
+                {models.length > 0 && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontWeight: 500, fontSize: '14px', marginBottom: '6px', color: 'var(--text-heading)' }}>
+                      选择模型 *
+                    </label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
+                      {models.map(m => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => handleModelChange(m.id)}
+                          style={{
+                            padding: '12px',
+                            border: formData.ai_model_id === m.id ? '2px solid var(--primary-500)' : '1px solid var(--border-default)',
+                            background: formData.ai_model_id === m.id ? 'rgba(59, 130, 246, 0.05)' : 'white',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            fontSize: '14px',
+                          }}
+                        >
+                          <div style={{ fontWeight: 500, marginBottom: '4px' }}>{m.name}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                            {m.framework === 'sklearn' ? 'scikit-learn' : 'PyTorch'}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeSection === 'params' && (
+              <div>
+                {models.length > 0 ? (
+                  <>
+                    <div style={{ marginBottom: '20px' }}>
+                      <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600 }}>模型参数</h4>
+                      {models.find(m => m.id === formData.ai_model_id)?.params.map(renderParamInput)}
+                    </div>
+
+                    <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '20px' }}>
+                      <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600 }}>训练参数</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 500, fontSize: '13px', marginBottom: '6px' }}>
+                            Epochs
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={1000}
+                            value={trainingConfig.epochs}
+                            onChange={(e) => setTrainingConfig(prev => ({ ...prev, epochs: parseInt(e.target.value) }))}
+                            style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '14px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 500, fontSize: '13px', marginBottom: '6px' }}>
+                            Batch Size
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={512}
+                            value={trainingConfig.batch_size}
+                            onChange={(e) => setTrainingConfig(prev => ({ ...prev, batch_size: parseInt(e.target.value) }))}
+                            style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '14px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 500, fontSize: '13px', marginBottom: '6px' }}>
+                            Learning Rate
+                          </label>
+                          <input
+                            type="number"
+                            min={0.0001}
+                            max={1}
+                            step={0.001}
+                            value={trainingConfig.learning_rate}
+                            onChange={(e) => setTrainingConfig(prev => ({ ...prev, learning_rate: parseFloat(e.target.value) }))}
+                            style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '14px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontWeight: 500, fontSize: '13px', marginBottom: '6px' }}>
+                            Test Split
+                          </label>
+                          <input
+                            type="number"
+                            min={0.05}
+                            max={0.5}
+                            step={0.05}
+                            value={trainingConfig.test_split}
+                            onChange={(e) => setTrainingConfig(prev => ({ ...prev, test_split: parseFloat(e.target.value) }))}
+                            style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '14px' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <Card>
+                    <div className="empty-state">
+                      <p>请先选择 AI 学习任务和模型</p>
+                      <Button variant="secondary" onClick={() => setActiveSection('ai')}>
+                        去选择
+                      </Button>
+                    </div>
+                  </Card>
+                )}
+              </div>
+            )}
           </div>
-          <div className="modal-footer">
-            <Button variant="ghost" onClick={onClose}>取消</Button>
+
+          {/* Footer */}
+          <div style={{
+            padding: '16px 24px',
+            borderTop: '1px solid var(--border-light)',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '12px',
+            backgroundColor: 'var(--bg-primary)',
+          }}>
+            <Button variant="ghost" onClick={onClose}>
+              取消
+            </Button>
             <Button type="submit" disabled={loading}>
               {loading ? '保存中...' : '保存'}
             </Button>
