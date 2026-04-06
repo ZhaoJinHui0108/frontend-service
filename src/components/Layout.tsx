@@ -132,6 +132,23 @@ function Layout() {
     }
   }, [navigate]);
 
+  // Listen for chat sidebar open event from Dashboard
+  useEffect(() => {
+    const handleOpenChat = () => {
+      setIsChatOpen(true);
+    };
+    
+    const interval = setInterval(() => {
+      const openChat = localStorage.getItem('openChatSidebar');
+      if (openChat) {
+        localStorage.removeItem('openChatSidebar');
+        handleOpenChat();
+      }
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   // Close user menu on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

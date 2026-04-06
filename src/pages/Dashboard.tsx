@@ -76,11 +76,19 @@ function Dashboard() {
       description: '与 AI 助手对话',
       icon: '💬',
       iconBg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-      path: '/',
+      action: 'openChat',
       stats: '',
       color: '#fee140',
     },
   ];
+
+  const handleCardClick = (card: typeof moduleCards[0]) => {
+    if (card.action === 'openChat') {
+      localStorage.setItem('openChatSidebar', Date.now().toString());
+    } else if (card.path) {
+      navigate(card.path);
+    }
+  };
 
   if (loading) {
     return <div className="loading">加载中...</div>;
@@ -123,7 +131,7 @@ function Dashboard() {
         {moduleCards.map((module) => (
           <div
             key={module.title}
-            onClick={() => navigate(module.path)}
+            onClick={() => handleCardClick(module)}
             style={{
               cursor: 'pointer',
               transition: 'all 0.2s ease',
