@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { aiLearningApi } from '../api/aiLearning';
 import type { TaskInfo, ModelInfo, TrainingJobResponse, TaskType } from '../types/aiLearning';
 import { TaskTypeLabels, TaskTypeIcons } from '../types/aiLearning';
-import { Button } from '../components/ui';
+import { Button, Card, Badge } from '../components/ui';
 import ModelParamsConfig from './ModelParamsConfig';
 import TrainingResults from './TrainingResults';
 
@@ -17,15 +17,6 @@ const AILearning: React.FC = () => {
   const [jobs, setJobs] = useState<TrainingJobResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // 按任务类型分组
-  const tasksByType = tasks.reduce((acc, task) => {
-    if (!acc[task.task_type]) {
-      acc[task.task_type] = [];
-    }
-    acc[task.task_type].push(task);
-    return acc;
-  }, {} as Record<TaskType, TaskInfo[]>);
 
   useEffect(() => {
     loadTasks();
@@ -86,11 +77,29 @@ const AILearning: React.FC = () => {
     setViewMode('results');
   };
 
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {
+      pending: 'warning',
+      running: 'primary',
+      completed: 'success',
+      failed: 'error',
+    };
+    const labels: Record<string, string> = {
+      pending: '⏳ 等待中',
+      running: '🔄 训练中',
+      completed: '✅ 完成',
+      failed: '❌ 失败',
+    };
+    return <Badge variant={variants[status] || 'primary'}>{labels[status] || status}</Badge>;
+  };
+
   const renderTasksView = () => (
-    <div className="ai-learning-tasks">
-      <div className="page-header">
+    <div className="page-content">
+      <div className="page-header flex-between">
         <h1>🤖 AI-Learing</h1>
-        <p className="page-subtitle">选择一个任务类型开始学习</p>
+        <Button variant="secondary" onClick={() => setViewMode('training')}>
+          📊 训练记录
+        </Button>
       </div>
 
       {error && (
@@ -99,76 +108,93 @@ const AILearning: React.FC = () => {
         </div>
       )}
 
-      <div className="task-groups">
-        {Object.entries(tasksByType).map(([type, taskList]) => (
-          <div key={type} className="task-group">
-            <h2 className="task-group-title">
-              {TaskTypeIcons[type as TaskType]} {TaskTypeLabels[type as TaskType]}
-            </h2>
-            <div className="task-cards">
-              {taskList.map((task) => (
-                <div
-                  key={task.id}
-                  className="task-card"
-                  onClick={() => handleTaskSelect(task)}
-                >
-                  <h3>{task.name}</h3>
-                  <p>{task.description}</p>
-                  <div className="task-meta">
-                    <span className="dataset-tag">{task.dataset_name}</span>
-                    <span className="models-count">
-                      {task.supported_models.length} 个模型
-                    </span>
-                  </div>
+      <div className="card-grid">
+        {tasks.map((task) => (
+          <Card key={task.id} style={{ cursor: 'pointer' }} onClick={() => handleTaskSelect(task)}>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div style={{ flex: 1 }}>
+                <div className="flex-between" style={{ marginBottom: '12px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>
+                    {TaskTypeIcons[task.task_type]} {task.name}
+                  </h3>
                 </div>
-              ))}
+                <p className="text-secondary" style={{ fontSize: '14px', marginBottom: '12px' }}>
+                  {task.description}
+                </p>
+                <div className="flex gap-sm" style={{ flexWrap: 'wrap', marginBottom: '12px' }}>
+                  <Badge variant="primary">{task.dataset_name}</Badge>
+                  <Badge variant="muted">{task.supported_models.length} 个模型</Badge>
+                </div>
+              </div>
+              <div style={{ borderTop: '1px solid #f2f3f5', paddingTop: '12px', marginTop: 'auto' }}>
+                <div className="text-muted" style={{ fontSize: '12px' }}>
+                  输入形状: [{task.input_shape.join(', ')}]
+                  {task.num_classes && ` | 类别数: ${task.num_classes}`}
+                </div>
+              </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
+
+      {tasks.length === 0 && !loading && (
+        <Card>
+          <div className="empty-state">
+            <p>暂无任务</p>
+          </div>
+        </Card>
+      )}
     </div>
   );
 
   const renderModelsView = () => (
-    <div className="ai-learning-models">
-      <div className="page-header">
-        <Button variant="ghost" onClick={() => setViewMode('tasks')}>
-          ← 返回任务列表
-        </Button>
-        <h1>{selectedTask?.name}</h1>
-        <p className="page-subtitle">{selectedTask?.description}</p>
+    <div className="page-content">
+      <div className="page-header flex-between">
+        <div>
+          <Button variant="ghost" onClick={() => setViewMode('tasks')} style={{ marginBottom: '8px', padding: '4px 0' }}>
+            ← 返回任务列表
+          </Button>
+          <h1 style={{ margin: 0 }}>{selectedTask?.name}</h1>
+          <p className="text-secondary" style={{ marginTop: '4px' }}>{selectedTask?.description}</p>
+        </div>
       </div>
 
-      <div className="model-cards">
+      <div className="card-grid">
         {models.map((model) => (
-          <div
-            key={model.id}
-            className="model-card"
-            onClick={() => handleModelSelect(model)}
-          >
-            <div className="model-header">
-              <h3>{model.name}</h3>
-              <span className={`framework-tag ${model.framework}`}>
+          <Card key={model.id} style={{ cursor: 'pointer' }} onClick={() => handleModelSelect(model)}>
+            <div className="flex-between" style={{ marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>{model.name}</h3>
+              <Badge variant={model.framework === 'sklearn' ? 'success' : 'primary'}>
                 {model.framework === 'sklearn' ? 'scikit-learn' : 'PyTorch'}
-              </span>
+              </Badge>
             </div>
-            <p>{model.description}</p>
-            <div className="model-params-count">
-              {model.params.length} 个可配置参数
+            <p className="text-secondary" style={{ fontSize: '14px', marginBottom: '12px' }}>
+              {model.description}
+            </p>
+            <div className="flex gap-sm">
+              <Badge variant="muted">{model.params.length} 个可配置参数</Badge>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
+
+      {models.length === 0 && !loading && (
+        <Card>
+          <div className="empty-state">
+            <p>暂无模型</p>
+          </div>
+        </Card>
+      )}
     </div>
   );
 
   const renderConfigView = () => (
-    <div className="ai-learning-config">
+    <div className="page-content">
       <div className="page-header">
-        <Button variant="ghost" onClick={() => setViewMode('models')}>
+        <Button variant="ghost" onClick={() => setViewMode('models')} style={{ marginBottom: '8px', padding: '4px 0' }}>
           ← 返回模型列表
         </Button>
-        <h1>{selectedTask?.name} - {selectedModel?.name}</h1>
+        <h1 style={{ margin: 0 }}>{selectedTask?.name} - {selectedModel?.name}</h1>
       </div>
 
       <ModelParamsConfig
@@ -180,65 +206,84 @@ const AILearning: React.FC = () => {
   );
 
   const renderTrainingView = () => (
-    <div className="ai-learning-training">
-      <div className="page-header">
-        <Button variant="ghost" onClick={() => setViewMode('tasks')}>
-          ← 返回任务列表
-        </Button>
-        <Button variant="secondary" onClick={handleCompare}>
-          📊 模型对比
-        </Button>
-        <h1>训练记录</h1>
+    <div className="page-content">
+      <div className="page-header flex-between">
+        <h1>📊 训练记录</h1>
+        <div className="flex gap-sm">
+          <Button variant="secondary" onClick={handleCompare} disabled={jobs.length === 0}>
+            模型对比
+          </Button>
+          <Button variant="primary" onClick={() => setViewMode('tasks')}>
+            开始新训练
+          </Button>
+        </div>
       </div>
 
-      <div className="jobs-list">
-        {jobs.length === 0 ? (
+      <div className="card-grid">
+        {jobs.map((job) => (
+          <Card key={job.job_id}>
+            <div className="flex-between" style={{ marginBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>
+                  {job.task_name}
+                </h3>
+                <p className="text-secondary" style={{ fontSize: '14px' }}>
+                  {job.model_name}
+                </p>
+              </div>
+              {getStatusBadge(job.status)}
+            </div>
+            
+            <div className="flex gap-sm" style={{ marginBottom: '12px', flexWrap: 'wrap' }}>
+              <Badge variant="muted">
+                创建: {new Date(job.created_at).toLocaleString()}
+              </Badge>
+              {job.training_time && (
+                <Badge variant="muted">
+                  耗时: {job.training_time.toFixed(1)}秒
+                </Badge>
+              )}
+            </div>
+
+            {job.error && (
+              <div className="alert alert-error" style={{ fontSize: '13px' }}>
+                {job.error}
+              </div>
+            )}
+
+            {job.metrics && (
+              <div style={{ borderTop: '1px solid #f2f3f5', paddingTop: '12px', marginTop: '12px' }}>
+                <div className="text-muted" style={{ fontSize: '12px', marginBottom: '8px' }}>
+                  最终指标:
+                </div>
+                <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                  {Object.entries(job.metrics.final_metrics || {}).map(([key, value]) => (
+                    <Badge key={key} variant="primary">
+                      {key}: {typeof value === 'number' ? value.toFixed(4) : value}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </Card>
+        ))}
+      </div>
+
+      {jobs.length === 0 && (
+        <Card>
           <div className="empty-state">
             <p>暂无训练记录</p>
             <Button onClick={() => setViewMode('tasks')}>开始训练</Button>
           </div>
-        ) : (
-          jobs.map((job) => (
-            <div key={job.job_id} className="job-card">
-              <div className="job-info">
-                <h3>{job.task_id} - {job.model_id}</h3>
-                <div className="job-meta">
-                  <span className={`status-badge ${job.status}`}>
-                    {job.status === 'pending' && '⏳ 等待中'}
-                    {job.status === 'running' && '🔄 训练中'}
-                    {job.status === 'completed' && '✅ 完成'}
-                    {job.status === 'failed' && '❌ 失败'}
-                  </span>
-                  <span>进度: {(job.progress * 100).toFixed(0)}%</span>
-                  <span>创建时间: {new Date(job.created_at).toLocaleString()}</span>
-                </div>
-              </div>
-              {job.metrics && (
-                <div className="job-metrics">
-                  <h4>最终指标:</h4>
-                  <div className="metrics-grid">
-                    {Object.entries(job.metrics.final_metrics).map(([key, value]) => (
-                      <div key={key} className="metric-item">
-                        <span className="metric-key">{key}</span>
-                        <span className="metric-value">
-                          {typeof value === 'number' ? value.toFixed(4) : value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
+        </Card>
+      )}
     </div>
   );
 
   const renderResultsView = () => (
-    <div className="ai-learning-results">
+    <div className="page-content">
       <div className="page-header">
-        <Button variant="ghost" onClick={() => setViewMode('training')}>
+        <Button variant="ghost" onClick={() => setViewMode('training')} style={{ marginBottom: '8px', padding: '4px 0' }}>
           ← 返回训练记录
         </Button>
         <h1>📊 模型对比</h1>

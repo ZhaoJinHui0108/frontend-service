@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '../components/ui';
+import { Button, Card, Badge } from '../components/ui';
 import { scheduledTasksApi } from '../api/scheduledTasks';
-import type { ScheduledTask, TaskExecutionHistory, AITask, AIModel, SchedulePreset, ScheduleType } from '../types/scheduledTask';
+import type { ScheduledTask, TaskExecutionHistory, ScheduleType } from '../types/scheduledTask';
 import { TaskStatusLabels, TaskStatusColors, ScheduleTypeLabels } from '../types/scheduledTask';
 import TaskFormModal from './TaskFormModal';
 import TaskExecutionModal from './TaskExecutionModal';
@@ -39,7 +39,6 @@ const ScheduledTasks: React.FC = () => {
   useEffect(() => {
     loadTasks();
     loadHistory();
-    // 每30秒刷新一次状态
     const interval = setInterval(() => {
       if (activeTab === 'tasks') loadTasks();
       if (activeTab === 'history') loadHistory();
@@ -100,162 +99,209 @@ const ScheduledTasks: React.FC = () => {
     return new Date(dateStr).toLocaleString('zh-CN');
   };
 
+  const getScheduleInfo = (task: ScheduledTask) => {
+    switch (task.schedule_type) {
+      case 'cron':
+        return (
+          <Badge variant="muted">
+            ⏰ {task.cron_expression}
+          </Badge>
+        );
+      case 'interval':
+        return (
+          <Badge variant="muted">
+            🔄 每 {task.interval_seconds} 秒
+          </Badge>
+        );
+      case 'once':
+        return (
+          <Badge variant="muted">
+            📅 {formatDate(task.execute_at)}
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {
+      pending: 'warning',
+      running: 'primary',
+      completed: 'success',
+      failed: 'error',
+      cancelled: 'secondary',
+    };
+    return (
+      <Badge variant={statusMap[status] || 'primary'}>
+        {TaskStatusLabels[status as keyof typeof TaskStatusLabels] || status}
+      </Badge>
+    );
+  };
+
   return (
-    <div className="scheduled-tasks-page">
-      <div className="page-header">
+    <div className="page-content">
+      <div className="page-header flex-between">
         <div>
           <h1>⏰ 定时任务</h1>
-          <p className="page-subtitle">管理 AI 学习任务的定时调度</p>
+          <p className="text-secondary" style={{ marginTop: '4px' }}>管理 AI 学习任务的定时调度</p>
         </div>
-        <Button onClick={handleCreate}>+ 新建定时任务</Button>
+        <Button variant="primary" onClick={handleCreate}>
+          + 新建定时任务
+        </Button>
       </div>
 
       {/* Tabs */}
-      <div className="tabs">
+      <div className="tabs" style={{ marginBottom: '24px' }}>
         <button
           className={`tab ${activeTab === 'tasks' ? 'active' : ''}`}
           onClick={() => setActiveTab('tasks')}
+          style={{
+            padding: '10px 20px',
+            border: 'none',
+            background: activeTab === 'tasks' ? 'var(--primary-500)' : 'transparent',
+            color: activeTab === 'tasks' ? 'white' : 'var(--text-secondary)',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 500,
+            transition: 'all 0.2s',
+          }}
         >
           任务列表 ({tasks.length})
         </button>
         <button
           className={`tab ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
+          style={{
+            padding: '10px 20px',
+            border: 'none',
+            background: activeTab === 'history' ? 'var(--primary-500)' : 'transparent',
+            color: activeTab === 'history' ? 'white' : 'var(--text-secondary)',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 500,
+            marginLeft: '8px',
+            transition: 'all 0.2s',
+          }}
         >
           执行历史
         </button>
       </div>
 
       {activeTab === 'tasks' ? (
-        <div className="tasks-list">
+        <div className="card-grid">
           {loading ? (
-            <div className="loading">加载中...</div>
+            <Card>
+              <div className="loading">加载中...</div>
+            </Card>
           ) : tasks.length === 0 ? (
-            <div className="empty-state">
-              <p>暂无定时任务</p>
-              <Button onClick={handleCreate}>创建第一个定时任务</Button>
-            </div>
+            <Card>
+              <div className="empty-state">
+                <p>暂无定时任务</p>
+                <Button onClick={handleCreate}>创建第一个定时任务</Button>
+              </div>
+            </Card>
           ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>任务名称</th>
-                  <th>调度类型</th>
-                  <th>AI 任务</th>
-                  <th>下次执行</th>
-                  <th>状态</th>
-                  <th>执行次数</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.map((task) => (
-                  <tr key={task.id}>
-                    <td>
-                      <div className="task-name">{task.name}</div>
-                      <div className="task-desc">{task.description || '-'}</div>
-                    </td>
-                    <td>
-                      <span className="schedule-type">
-                        {ScheduleTypeLabels[task.schedule_type]}
-                      </span>
-                      {task.schedule_type === 'cron' && (
-                        <div className="cron-expr">{task.cron_expression}</div>
-                      )}
-                      {task.schedule_type === 'interval' && (
-                        <div className="interval-expr">每 {task.interval_seconds} 秒</div>
-                      )}
-                      {task.schedule_type === 'once' && task.execute_at && (
-                        <div className="once-expr">{formatDate(task.execute_at)}</div>
-                      )}
-                    </td>
-                    <td>
-                      <div className="ai-task-id">{task.ai_task_id}</div>
-                      <div className="ai-model-id">{task.ai_model_id}</div>
-                    </td>
-                    <td>{formatDate(task.next_run_at)}</td>
-                    <td>
-                      <span
-                        className="status-badge"
-                        style={{ backgroundColor: TaskStatusColors[task.status] }}
-                      >
-                        {TaskStatusLabels[task.status]}
-                      </span>
-                    </td>
-                    <td>{task.run_count}</td>
-                    <td>
-                      <div className="action-buttons">
-                        <Button variant="ghost" size="small" onClick={() => handleEdit(task)}>
-                          编辑
-                        </Button>
-                        <Button variant="ghost" size="small" onClick={() => handleExecuteNow(task.id)}>
-                          立即执行
-                        </Button>
-                        {task.enabled ? (
-                          <Button variant="ghost" size="small" onClick={() => handlePause(task.id)}>
-                            暂停
-                          </Button>
-                        ) : (
-                          <Button variant="ghost" size="small" onClick={() => handleResume(task.id)}>
-                            恢复
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="small" onClick={() => handleDelete(task.id)}>
-                          删除
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            tasks.map((task) => (
+              <Card key={task.id}>
+                <div className="flex-between" style={{ marginBottom: '12px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>
+                      {task.name}
+                    </h3>
+                    {task.description && (
+                      <p className="text-secondary" style={{ fontSize: '14px', marginTop: '4px' }}>
+                        {task.description}
+                      </p>
+                    )}
+                  </div>
+                  {getStatusBadge(task.status)}
+                </div>
+
+                <div className="flex gap-sm" style={{ marginBottom: '12px', flexWrap: 'wrap' }}>
+                  {getScheduleInfo(task)}
+                  <Badge variant="primary">
+                    🤖 {task.ai_task_id}
+                  </Badge>
+                  <Badge variant="muted">
+                    📦 {task.ai_model_id}
+                  </Badge>
+                </div>
+
+                <div className="flex gap-sm text-muted" style={{ fontSize: '13px', marginBottom: '12px' }}>
+                  <span>执行次数: {task.run_count}</span>
+                  {task.next_run_at && <span>下次执行: {formatDate(task.next_run_at)}</span>}
+                </div>
+
+                <div style={{ borderTop: '1px solid #f2f3f5', paddingTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <Button variant="secondary" size="small" onClick={() => handleEdit(task)}>
+                    编辑
+                  </Button>
+                  <Button variant="secondary" size="small" onClick={() => handleExecuteNow(task.id)}>
+                    立即执行
+                  </Button>
+                  {task.enabled ? (
+                    <Button variant="secondary" size="small" onClick={() => handlePause(task.id)}>
+                      暂停
+                    </Button>
+                  ) : (
+                    <Button variant="secondary" size="small" onClick={() => handleResume(task.id)}>
+                      恢复
+                    </Button>
+                  )}
+                  <Button variant="danger" size="small" onClick={() => handleDelete(task.id)}>
+                    删除
+                  </Button>
+                </div>
+              </Card>
+            ))
           )}
         </div>
       ) : (
-        <div className="history-list">
+        <div className="card-grid">
           {history.length === 0 ? (
-            <div className="empty-state">
-              <p>暂无执行历史</p>
-            </div>
+            <Card>
+              <div className="empty-state">
+                <p>暂无执行历史</p>
+              </div>
+            </Card>
           ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>任务名称</th>
-                  <th>状态</th>
-                  <th>开始时间</th>
-                  <th>完成时间</th>
-                  <th>结果</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((exec) => (
-                  <tr key={exec.id}>
-                    <td>{exec.scheduled_task_name}</td>
-                    <td>
-                      <span
-                        className="status-badge"
-                        style={{ backgroundColor: TaskStatusColors[exec.status] }}
-                      >
-                        {TaskStatusLabels[exec.status]}
-                      </span>
-                    </td>
-                    <td>{formatDate(exec.started_at)}</td>
-                    <td>{formatDate(exec.completed_at)}</td>
-                    <td>
-                      {exec.error && <span className="error-msg">{exec.error}</span>}
-                      {exec.result && (
-                        <span className="result-msg">
-                          {exec.result.accuracy !== undefined && `准确率: ${(exec.result.accuracy * 100).toFixed(2)}%`}
-                          {exec.result.test_accuracy !== undefined && `准确率: ${(exec.result.test_accuracy * 100).toFixed(2)}%`}
-                          {exec.result.final_loss !== undefined && `损失: ${exec.result.final_loss.toFixed(4)}`}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            history.map((exec) => (
+              <Card key={exec.id}>
+                <div className="flex-between" style={{ marginBottom: '12px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>
+                    {exec.scheduled_task_name}
+                  </h3>
+                  {getStatusBadge(exec.status)}
+                </div>
+
+                <div className="flex gap-sm" style={{ marginBottom: '12px', flexWrap: 'wrap' }}>
+                  <Badge variant="muted">
+                    开始: {formatDate(exec.started_at)}
+                  </Badge>
+                  {exec.completed_at && (
+                    <Badge variant="muted">
+                      完成: {formatDate(exec.completed_at)}
+                    </Badge>
+                  )}
+                </div>
+
+                {exec.error && (
+                  <div className="alert alert-error" style={{ fontSize: '13px', marginBottom: '12px' }}>
+                    ❌ {exec.error}
+                  </div>
+                )}
+
+                {exec.result && (
+                  <div style={{ fontSize: '13px', color: 'var(--success)' }}>
+                    ✅ 
+                    {exec.result.accuracy !== undefined && ` 准确率: ${(exec.result.accuracy * 100).toFixed(2)}%`}
+                    {exec.result.test_accuracy !== undefined && ` 准确率: ${(exec.result.test_accuracy * 100).toFixed(2)}%`}
+                    {exec.result.final_loss !== undefined && ` 损失: ${exec.result.final_loss.toFixed(4)}`}
+                  </div>
+                )}
+              </Card>
+            ))
           )}
         </div>
       )}
