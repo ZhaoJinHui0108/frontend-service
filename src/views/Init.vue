@@ -30,7 +30,7 @@
         </UiButton>
       </div>
 
-      <UiAlert v-if="message" :type="messageType">{{ message }}</UiAlert>
+      <UiAlert v-if="message" :type="messageType" style="margin-top: 20px">{{ message }}</UiAlert>
     </UiCard>
   </div>
 </template>
@@ -97,3 +97,63 @@ const dropTables = async () => {
   }
 }
 </script>
+
+<style scoped>
+.page-container {
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.page-container h1 {
+  font-size: 32px;
+  font-weight: 600;
+  color: #18181b;
+  margin-bottom: 32px;
+}
+
+.init-section {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f2f3f5;
+}
+
+.init-section:last-of-type {
+  border-bottom: none;
+}
+
+.init-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #18181b;
+  margin-bottom: 8px;
+}
+
+.init-section p {
+  margin-bottom: 16px;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.init-section.danger {
+  background: #fff2f0;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.init-section.danger h3 {
+  color: #ff4d4f;
+}
+
+.text-muted {
+  color: #8e8e93;
+}
+
+.text-error {
+  color: #ff4d4f;
+}
+</style>

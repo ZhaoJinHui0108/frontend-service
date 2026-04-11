@@ -38,17 +38,44 @@ export type TaskType =
   | 'question_answering'
   | 'recommendation'
 
+// Task type labels
+export const TaskTypeLabels: Record<TaskType, string> = {
+  classification: '分类',
+  regression: '回归',
+  clustering: '聚类',
+  object_detection: '目标检测',
+  semantic_segmentation: '语义分割',
+  sequence_generation: '序列生成',
+  question_answering: '问答系统',
+  recommendation: '推荐系统'
+}
+
+// Task type icons
+export const TaskTypeIcons: Record<TaskType, string> = {
+  classification: '🏷️',
+  regression: '📈',
+  clustering: '🎯',
+  object_detection: '🔍',
+  semantic_segmentation: '🖼️',
+  sequence_generation: '📝',
+  question_answering: '❓',
+  recommendation: '⭐'
+}
+
 export interface TaskInfo {
   id: string
   name: string
-  task_type: TaskType
   description: string
-  created_at: string
+  task_type: TaskType
+  dataset_name: string
+  input_shape: number[]
+  num_classes?: number
+  supported_models: string[]
 }
 
-export interface ModelParam {
+export interface ModelParamConfig {
   param_name: string
-  param_type: 'string' | 'int' | 'float' | 'bool' | 'choice' | 'list'
+  param_type: 'int' | 'float' | 'string' | 'bool' | 'choice' | 'list'
   default: any
   min_value?: number
   max_value?: number
@@ -60,16 +87,33 @@ export interface ModelParam {
 export interface ModelInfo {
   id: string
   name: string
-  framework: string
+  task_type: TaskType
+  framework: 'sklearn' | 'pytorch'
   description: string
-  params: ModelParam[]
-  created_at: string
+  params: ModelParamConfig[]
+}
+
+export interface TrainingConfig {
+  epochs: number
+  batch_size: number
+  learning_rate: number
+  test_split: number
+  random_seed: number
 }
 
 export interface TrainingJobCreate {
   task_id: string
   model_id: string
-  params: Record<string, any>
+  model_params: Record<string, any>
+  training_config: TrainingConfig
+}
+
+export interface TrainingMetrics {
+  train_loss: number[]
+  val_loss: number[]
+  train_accuracy: number[]
+  val_accuracy: number[]
+  final_metrics: Record<string, number | string>
 }
 
 export interface TrainingJobResponse {
@@ -78,39 +122,29 @@ export interface TrainingJobResponse {
   task_name: string
   model_id: string
   model_name: string
-  params: Record<string, any>
   status: 'pending' | 'running' | 'completed' | 'failed'
-  progress?: number
-  result?: any
-  error?: string
+  model_params: Record<string, any>
+  training_config: TrainingConfig
+  metrics?: TrainingMetrics
+  training_time?: number
   created_at: string
   started_at?: string
   completed_at?: string
+  error?: string
 }
 
-export interface TrainingMetrics {
-  epochs?: number
-  batch_size?: number
-  learning_rate?: number
-  train_loss?: number
-  val_loss?: number
-  accuracy?: number
-  precision?: number
-  recall?: number
-  f1?: number
-  confusion_matrix?: number[][]
-  feature_importance?: Record<string, number>
-  predictions?: any[]
-  actual?: any[]
+export interface ModelComparisonItem {
+  model_id: string
+  model_name: string
+  job_id: string
+  status: string
+  metrics?: Record<string, number | string>
 }
 
 export interface ModelComparisonResponse {
   task_id: string
-  models: Array<{
-    model_id: string
-    model_name: string
-    metrics: TrainingMetrics
-  }>
+  task_name: string
+  results: ModelComparisonItem[]
 }
 
 export const aiLearningApi = {

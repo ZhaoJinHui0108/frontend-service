@@ -18,6 +18,9 @@
 </template>
 
 <script setup lang="ts">
+import UiModal from './UiModal.vue'
+import UiButton from './UiButton.vue'
+
 interface Props {
   show: boolean
   title?: string
@@ -42,3 +45,11 @@ const handleCancel = () => {
   emit('cancel')
 }
 </script>
+
+<style scoped>
+.confirm-modal-content p {
+  font-size: 16px;
+  color: #222222;
+  margin: 0;
+}
+</style>

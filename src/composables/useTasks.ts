@@ -1,5 +1,5 @@
-import { ref } from 'vue'
-import { aiLearningApi, type TaskInfo, type ModelInfo, type TrainingJobResponse, type TaskType, type TrainingJobCreate, type TrainingMetrics } from '@/services/aiLearningService'
+import { ref, computed } from 'vue'
+import { aiLearningApi, type TaskInfo, type ModelInfo, type TrainingJobResponse, type TaskType, type TrainingJobCreate, type TrainingMetrics, type TrainingConfig } from '@/services/aiLearningService'
 
 export function useTasks() {
   const tasks = ref<TaskInfo[]>([])

@@ -14,12 +14,12 @@
             </div>
           </div>
         </div>
-        <UiButton @click="showAddModal = true">添加配置</UiButton>
+        <UiButton @click="showAddModal = true" style="margin-top: 16px">添加配置</UiButton>
       </div>
     </UiCard>
 
     <UiModal :show="showAddModal" title="添加配置" @close="showAddModal = false">
-      <form @submit.prevent="handleAdd">
+      <form @submit.prevent="handleAdd" class="form">
         <div class="form-group">
           <label>配置名称</label>
           <UiInput v-model="newConfig.key" placeholder="配置名称" />
@@ -28,11 +28,11 @@
           <label>配置值</label>
           <UiInput v-model="newConfig.value" placeholder="配置值" />
         </div>
-        <div class="modal-footer">
-          <UiButton variant="secondary" type="button" @click="showAddModal = false">取消</UiButton>
-          <UiButton type="submit">保存</UiButton>
-        </div>
       </form>
+      <template #footer>
+        <UiButton variant="secondary" @click="showAddModal = false">取消</UiButton>
+        <UiButton @click="handleAdd">保存</UiButton>
+      </template>
     </UiModal>
   </div>
 </template>
@@ -94,3 +94,76 @@ const deleteConfig = async (id: number) => {
 
 onMounted(loadConfigs)
 </script>
+
+<style scoped>
+.page-container {
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.page-container h1 {
+  font-size: 32px;
+  font-weight: 600;
+  color: #18181b;
+  margin-bottom: 32px;
+}
+
+.config-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #18181b;
+  margin-bottom: 8px;
+}
+
+.config-section p {
+  margin-bottom: 16px;
+}
+
+.config-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.config-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+.config-key {
+  font-weight: 500;
+  color: #18181b;
+}
+
+.config-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #45515e;
+}
+
+.text-muted {
+  color: #8e8e93;
+}
+</style>

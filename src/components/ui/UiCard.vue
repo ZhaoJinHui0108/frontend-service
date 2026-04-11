@@ -15,3 +15,12 @@ withDefaults(defineProps<Props>(), {
   style: () => ({})
 })
 </script>
+
+<style scoped>
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 6px;
+}
+</style>

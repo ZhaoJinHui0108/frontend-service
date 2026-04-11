@@ -28,47 +28,83 @@ api.interceptors.response.use(
   }
 )
 
+export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type ScheduleType = 'once' | 'cron' | 'interval'
+
+export const ScheduleTypeLabels: Record<ScheduleType, string> = {
+  once: '执行一次',
+  cron: 'Cron 表达式',
+  interval: '间隔执行'
+}
+
+export const TaskStatusLabels: Record<TaskStatus, string> = {
+  pending: '等待中',
+  running: '执行中',
+  completed: '已完成',
+  failed: '失败',
+  cancelled: '已取消'
+}
+
 export interface ScheduledTask {
   id: number
   name: string
   description?: string
+  schedule_type: ScheduleType
+  execute_at?: string
+  cron_expression?: string
+  interval_seconds?: number
   ai_task_id: string
   ai_model_id: string
-  schedule_type: 'cron' | 'interval'
-  schedule_config: Record<string, any>
-  params: Record<string, any>
+  ai_model_params: Record<string, any>
+  ai_training_config: Record<string, any>
   enabled: boolean
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'paused'
-  run_count: number
+  status: TaskStatus
+  last_run_at?: string
   next_run_at?: string
+  run_count: number
   created_at: string
   updated_at: string
-}
-
-export interface TaskExecutionHistory {
-  id: number
-  scheduled_task_id: number
-  scheduled_task_name: string
-  status: 'pending' | 'running' | 'completed' | 'failed'
-  started_at: string
-  completed_at?: string
-  result?: any
-  error?: string
 }
 
 export interface ScheduledTaskCreate {
   name: string
   description?: string
+  schedule_type: ScheduleType
+  execute_at?: string
+  cron_expression?: string
+  interval_seconds?: number
   ai_task_id: string
   ai_model_id: string
-  schedule_type: 'cron' | 'interval'
-  schedule_config: Record<string, any>
-  params: Record<string, any>
+  ai_model_params: Record<string, any>
+  ai_training_config: Record<string, any>
   enabled?: boolean
 }
 
-export interface ScheduledTaskUpdate extends Partial<ScheduledTaskCreate> {
+export interface ScheduledTaskUpdate {
+  name?: string
+  description?: string
+  schedule_type?: ScheduleType
+  execute_at?: string
+  cron_expression?: string
+  interval_seconds?: number
+  ai_task_id?: string
+  ai_model_id?: string
+  ai_model_params?: Record<string, any>
+  ai_training_config?: Record<string, any>
+  enabled?: boolean
+}
+
+export interface TaskExecutionHistory {
   id: number
+  task_id: number
+  scheduled_task_name: string
+  status: TaskStatus
+  started_at: string
+  completed_at?: string
+  ai_job_id?: string
+  ai_job_status?: string
+  result?: Record<string, any>
+  error?: string
 }
 
 export function useScheduledTasks() {
