@@ -8,12 +8,37 @@ import TaskExecutionModal from './TaskExecutionModal';
 
 const ScheduledTasks: React.FC = () => {
   const [tasks, setTasks] = useState<ScheduledTask[]>([]);
+  const [filteredTasks, setFilteredTasks] = useState<ScheduledTask[]>([]);
   const [history, setHistory] = useState<TaskExecutionHistory[]>([]);
   const [loading, setLoading] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
   const [showExecutionModal, setShowExecutionModal] = useState(false);
   const [editingTask, setEditingTask] = useState<ScheduledTask | null>(null);
   const [activeTab, setActiveTab] = useState<'tasks' | 'history'>('tasks');
+  const [taskSearch, setTaskSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  
+  // Update filtered tasks when tasks, search, or status changes
+  useEffect(() => {
+    let result = tasks;
+    
+    // Filter by status
+    if (statusFilter !== 'all') {
+      result = result.filter(task => task.status === statusFilter);
+    }
+    
+    // Search by task name or AI task ID
+    if (taskSearch.trim()) {
+      const search = taskSearch.toLowerCase();
+      result = result.filter(task =>
+        task.name?.toLowerCase().includes(search) ||
+        task.ai_task_id?.toLowerCase().includes(search) ||
+        task.ai_model_id?.toLowerCase().includes(search)
+      );
+    }
+    
+    setFilteredTasks(result);
+  }, [tasks, taskSearch, statusFilter]);
 
   const loadTasks = async () => {
     try {
@@ -189,74 +214,120 @@ const ScheduledTasks: React.FC = () => {
       </div>
 
       {activeTab === 'tasks' ? (
-        <div className="card-grid">
-          {loading ? (
-            <Card>
-              <div className="loading">加载中...</div>
-            </Card>
-          ) : tasks.length === 0 ? (
+        <>
+          {/* Search and Filter Bar */}
+          <div style={{ marginBottom: '20px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <input
+              type="text"
+              placeholder="搜索任务名称、AI任务、模型..."
+              value={taskSearch}
+              onChange={(e) => setTaskSearch(e.target.value)}
+              style={{
+                flex: 1,
+                minWidth: '200px',
+                padding: '8px 12px',
+                border: '1px solid var(--border-default)',
+                borderRadius: '6px',
+                fontSize: '14px',
+              }}
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                border: '1px solid var(--border-default)',
+                borderRadius: '6px',
+                fontSize: '14px',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="all">全部状态</option>
+              <option value="pending">等待中</option>
+              <option value="running">执行中</option>
+              <option value="completed">已完成</option>
+              <option value="failed">失败</option>
+              <option value="paused">已暂停</option>
+            </select>
+            <span className="text-muted" style={{ fontSize: '13px' }}>
+              共 {filteredTasks.length} 个任务
+            </span>
+          </div>
+
+          {/* Table */}
+          {filteredTasks.length > 0 ? (
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>任务名称</th>
+                    <th>AI任务</th>
+                    <th>模型</th>
+                    <th>调度</th>
+                    <th>状态</th>
+                    <th>执行次数</th>
+                    <th>下次执行</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTasks.map((task) => (
+                    <tr key={task.id}>
+                      <td>
+                        <div style={{ fontWeight: 500 }}>{task.name}</div>
+                        {task.description && (
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                            {task.description.substring(0, 30)}{task.description.length > 30 ? '...' : ''}
+                          </div>
+                        )}
+                      </td>
+                      <td>{task.ai_task_id}</td>
+                      <td>{task.ai_model_id}</td>
+                      <td>{getScheduleInfo(task)}</td>
+                      <td>{getStatusBadge(task.status)}</td>
+                      <td>{task.run_count}</td>
+                      <td>{task.next_run_at ? formatDate(task.next_run_at) : '-'}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                          <Button variant="secondary" size="small" onClick={() => handleEdit(task)}>
+                            编辑
+                          </Button>
+                          <Button variant="secondary" size="small" onClick={() => handleExecuteNow(task.id)}>
+                            执行
+                          </Button>
+                          {task.enabled ? (
+                            <Button variant="secondary" size="small" onClick={() => handlePause(task.id)}>
+                              暂停
+                            </Button>
+                          ) : (
+                            <Button variant="secondary" size="small" onClick={() => handleResume(task.id)}>
+                              恢复
+                            </Button>
+                          )}
+                          <Button variant="danger" size="small" onClick={() => handleDelete(task.id)}>
+                            删除
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
             <Card>
               <div className="empty-state">
-                <p>暂无定时任务</p>
-                <Button onClick={handleCreate}>创建第一个定时任务</Button>
+                <p>{tasks.length === 0 ? '暂无定时任务' : '没有匹配的记录'}</p>
+                {tasks.length === 0 ? (
+                  <Button onClick={handleCreate}>创建第一个定时任务</Button>
+                ) : (
+                  <Button onClick={() => { setTaskSearch(''); setStatusFilter('all'); }}>清除筛选</Button>
+                )}
               </div>
             </Card>
-          ) : (
-            tasks.map((task) => (
-              <Card key={task.id}>
-                <div className="flex-between" style={{ marginBottom: '12px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>
-                      {task.name}
-                    </h3>
-                    {task.description && (
-                      <p className="text-secondary" style={{ fontSize: '14px', marginTop: '4px' }}>
-                        {task.description}
-                      </p>
-                    )}
-                  </div>
-                  {getStatusBadge(task.status)}
-                </div>
-
-                <div className="flex gap-sm" style={{ marginBottom: '12px', flexWrap: 'wrap' }}>
-                  {getScheduleInfo(task)}
-                  <Badge variant="primary">
-                    🤖 {task.ai_task_id}
-                  </Badge>
-                  <Badge variant="muted">
-                    📦 {task.ai_model_id}
-                  </Badge>
-                </div>
-
-                <div className="flex gap-sm text-muted" style={{ fontSize: '13px', marginBottom: '12px' }}>
-                  <span>执行次数: {task.run_count}</span>
-                  {task.next_run_at && <span>下次执行: {formatDate(task.next_run_at)}</span>}
-                </div>
-
-                <div style={{ borderTop: '1px solid #f2f3f5', paddingTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <Button variant="secondary" size="small" onClick={() => handleEdit(task)}>
-                    编辑
-                  </Button>
-                  <Button variant="secondary" size="small" onClick={() => handleExecuteNow(task.id)}>
-                    立即执行
-                  </Button>
-                  {task.enabled ? (
-                    <Button variant="secondary" size="small" onClick={() => handlePause(task.id)}>
-                      暂停
-                    </Button>
-                  ) : (
-                    <Button variant="secondary" size="small" onClick={() => handleResume(task.id)}>
-                      恢复
-                    </Button>
-                  )}
-                  <Button variant="danger" size="small" onClick={() => handleDelete(task.id)}>
-                    删除
-                  </Button>
-                </div>
-              </Card>
-            ))
           )}
-        </div>
+        </>
       ) : (
         <div className="card-grid">
           {history.length === 0 ? (

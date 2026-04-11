@@ -220,7 +220,7 @@ const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model
                 type="range"
                 min={param.min_value}
                 max={param.max_value}
-                step={param.step || 1}
+                step={param.step || 0.01}
                 value={value}
                 onChange={(e) => handleParamChange(param.param_name, parseFloat(e.target.value))}
                 disabled={trainingJob?.status === 'running'}
@@ -230,7 +230,7 @@ const ModelParamsConfig = forwardRef<ModelParamsConfigRef, Props>(({ task, model
                 type="number"
                 min={param.min_value}
                 max={param.max_value}
-                step={param.step || 1}
+                step="any"
                 value={value}
                 onChange={(e) => handleParamChange(param.param_name, parseFloat(e.target.value))}
                 disabled={trainingJob?.status === 'running'}

@@ -1,23 +1,11 @@
-export { Button } from './Button';
-export type { ButtonProps } from './Button';
+export { default as UiButton } from './UiButton.vue'
+export { default as UiCard } from './UiCard.vue'
+export { default as UiBadge } from './UiBadge.vue'
+export { default as UiInput } from './UiInput.vue'
+export { default as UiSelect } from './UiSelect.vue'
+export { default as UiModal } from './UiModal.vue'
+export { default as UiConfirmModal } from './UiConfirmModal.vue'
+export { default as UiTable } from './UiTable.vue'
+export { default as UiAlert } from './UiAlert.vue'
 
-export { Input } from './Input';
-export type { InputProps } from './Input';
-
-export { Card } from './Card';
-export type { CardProps } from './Card';
-
-export { Badge } from './Badge';
-export type { BadgeProps } from './Badge';
-
-export { Modal, ConfirmModal } from './Modal';
-export type { ModalProps, ConfirmModalProps } from './Modal';
-
-export { Select } from './Select';
-export type { SelectProps, SelectOption } from './Select';
-
-export { Table } from './Table';
-export type { TableProps, TableColumn } from './Table';
-
-export { Alert } from './Alert';
-export type { AlertProps } from './Alert';
+export type { SelectOption } from './UiSelect.vue'

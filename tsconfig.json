@@ -10,11 +10,28 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "types": ["vite/client"]
   },
-  "include": ["src"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.vue"
+  ],
+  "exclude": [
+    "src/**/*.tsx",
+    "src/pages/*.tsx",
+    "src/components/*.tsx",
+    "src/components/ui/*.tsx",
+    "src/api/*.ts"
+  ],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

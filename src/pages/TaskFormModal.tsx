@@ -254,7 +254,7 @@ const TaskFormModal: React.FC<Props> = ({ task, onClose, onSuccess }) => {
               type="number"
               min={param.min_value}
               max={param.max_value}
-              step={param.step || 1}
+              step="any"
               value={value ?? param.default}
               onChange={(e) => setModelParams(prev => ({ ...prev, [param.param_name]: parseFloat(e.target.value) }))}
               style={{

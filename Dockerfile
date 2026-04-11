@@ -1,23 +1,15 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+# Install serve for static file serving
+RUN npm install -g serve
 
-COPY . .
+# Copy built files
+COPY dist ./dist
+COPY package.json ./
 
-RUN npm run build
+# Serve static files on port 3000
+EXPOSE 3000
 
-FROM nginx:alpine
-
-RUN apk add --no-cache openssl
-
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
-
-EXPOSE 80
-
-ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["serve", "-s", "dist", "-l", "3000"]
